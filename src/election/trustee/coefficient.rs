@@ -71,7 +71,7 @@ impl Committment {
 
         // Check that the hash equation `cᵢⱼ = H(Q, Kᵢⱼ, hᵢⱼ)` holds
         {
-            let rhs = hash_all!(q, k.to_bytes_be(), h.to_bytes_be());
+            let rhs = hash_all!(q, k, h);
             if c != &rhs {
                 errors.push(Error::Hash {
                     lhs: c.clone(),

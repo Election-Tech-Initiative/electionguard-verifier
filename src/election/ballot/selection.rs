@@ -81,15 +81,7 @@ impl Committment {
 
         {
             let lhs: BigUint = (c0 + c1) % (p - 1u8);
-            let hash: Hash = hash_all!(
-                q,
-                alpha.to_bytes_be(),
-                beta.to_bytes_be(),
-                a0.to_bytes_be(),
-                b0.to_bytes_be(),
-                a1.to_bytes_be(),
-                b1.to_bytes_be()
-            );
+            let hash: Hash = hash_all!(q, alpha, beta, a0, b0, a1, b1);
             let rhs = BigUint::from_bytes_be(&hash);
             if lhs != rhs {
                 errors.push(Error::Hash { lhs, rhs })
