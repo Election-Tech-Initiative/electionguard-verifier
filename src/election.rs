@@ -1,10 +1,13 @@
 use num::bigint::BigUint;
 use serde::Deserialize;
 
+mod hash;
 mod parameters;
 mod trustee;
 
+use hash::Hash;
 use parameters::Parameters;
+
 #[derive(Deserialize)]
 pub struct Results {
     parameters: Parameters,
@@ -44,11 +47,21 @@ pub struct BallotDecryption();
 #[derive(Deserialize)]
 pub struct ContestTally();
 
-impl Results {
-    pub fn validate(self: &Self) -> Result<(), ValidationError> {
-        Ok(())
-    }
+#[derive(Debug, Clone)]
+pub enum Error {
+    Trustee { index: u32, error: trustee::Error },
 }
 
-#[derive(Debug)]
-pub enum ValidationError {}
+impl Results {
+    pub fn validate(self: &Self) -> Vec<Error> {
+        self.trustee_committments
+            .iter()
+            .flat_map(|committment| committment.verify(&self.parameters, &self.base_hash))
+            .enumerate()
+            .map(|(i, error)| Error::Trustee {
+                index: i as u32,
+                error,
+            })
+            .collect()
+    }
+}

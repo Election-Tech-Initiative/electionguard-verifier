@@ -24,11 +24,11 @@ struct Options {
 enum Error {
     IO(io::Error),
     JSON(serde_json::Error),
-    Validation(election::ValidationError),
+    Validation(Vec<election::Error>),
 }
 
-impl From<election::ValidationError> for Error {
-    fn from(error: election::ValidationError) -> Error {
+impl From<Vec<election::Error>> for Error {
+    fn from(error: Vec<election::Error>) -> Error {
         Error::Validation(error)
     }
 }
@@ -55,7 +55,11 @@ fn main() -> Result<(), Error> {
 
     let input: election::Results = from_reader(BufReader::new(reader))?;
 
-    input.validate()?;
+    let errors = input.validate();
 
-    Ok(())
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors.into())
+    }
 }
