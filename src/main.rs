@@ -1,7 +1,6 @@
 use serde_json::from_reader;
 use std::fs::File;
 use std::io;
-use std::io::Read;
 use std::io::{stdin, BufReader};
 use structopt::StructOpt;
 
@@ -48,12 +47,10 @@ impl From<serde_json::Error> for Error {
 fn main() -> Result<(), Error> {
     let opt = Options::from_args();
 
-    let reader: Box<Read> = match opt.input {
-        None => Box::new(stdin()),
-        Some(path) => Box::new(File::open(path)?),
+    let input: election::Results = match opt.input {
+        None => from_reader(BufReader::new(stdin()))?,
+        Some(path) => from_reader(BufReader::new(File::open(path)?))?,
     };
-
-    let input: election::Results = from_reader(BufReader::new(reader))?;
 
     let errors = input.validate();
 
