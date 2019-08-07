@@ -1,10 +1,10 @@
-use digest::Digest;
 use num::bigint::BigUint;
 use serde::Deserialize;
 use sha2::Sha256;
 
 use crate::election::hash::Hash;
 use crate::election::parameters::Parameters;
+use crate::hash_all;
 
 /// The values an election trustee commits to as part of the
 /// non-interactive zero-knowledge Schnorr proof of possession of the
@@ -68,7 +68,7 @@ impl Committment {
 
         // Check that the hash equation `cᵢⱼ = H(Q, Kᵢⱼ, hᵢⱼ)` holds
         {
-            let rhs = hash_eq(q, k, h);
+            let rhs = hash_all!(q, k.to_bytes_be(), h.to_bytes_be());
             if &rhs != c {
                 errors.push(Error::HashMismatch {
                     lhs: c.clone(),
@@ -89,15 +89,4 @@ impl Committment {
 
         errors
     }
-}
-
-/// Compute the hash that the trustee computed in order to form the
-/// non-interactive zero-knowledge Schorr proof of posession of the
-/// private key, ie. `H(Q, Kᵢⱼ, hᵢⱼ)`
-fn hash_eq(base_hash: &[u8], public_key: &BigUint, hash_input: &BigUint) -> [u8; 32] {
-    let hasher = Sha256::new();
-    let hasher = hasher.chain(base_hash);
-    let hasher = hasher.chain(public_key.to_bytes_be());
-    let hasher = hasher.chain(hash_input.to_bytes_be());
-    hasher.result().into()
 }
