@@ -7,7 +7,7 @@ use structopt::StructOpt;
 mod election;
 
 #[structopt(
-    name = "electionguard-verify",
+    name = "electionguard_verify",
     about = "Verify the results of an election."
 )]
 #[derive(StructOpt)]
