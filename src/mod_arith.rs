@@ -1,5 +1,7 @@
 use num::BigUint;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
+};
 
 #[macro_use]
 mod macros;
@@ -39,6 +41,19 @@ impl<'a> SubAssign<&'a Num> for Num {
     }
 }
 
+// Use the caret (BitXor) for modular exponentiation
+forward_all_binop_to_val_ref!(impl BitXor for Num, bitxor);
+forward_val_ref_binop_to_val_assign!(impl BitXor for Num, bitxor, BitXorAssign, bitxor_assign);
+forward_val_assign!(impl BitXorAssign for Num, bitxor_assign);
+
+impl<'a> BitXorAssign<&'a Num> for Num {
+    #[inline]
+    fn bitxor_assign(&mut self, other: &Num) {
+        check_moduli!(self, other);
+        self.val = BigUint::modpow(&self.val, &other.val, &self.modulus);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,6 +86,11 @@ mod tests {
         #[test]
         fn test_sub() -> () {
             assert_eq!(make_num(3) - make_num(2), make_num(1));
+        }
+
+        #[test]
+        fn test_pow() -> () {
+            assert_eq!(make_num(2) ^ make_num(2), make_num(4));
         }
     }
 
@@ -107,6 +127,11 @@ mod tests {
         #[test]
         fn test_sub_zero() -> () {
             assert_eq!(make_num(3) - make_num(8), make_num(0));
+        }
+
+        #[test]
+        fn test_pow() -> () {
+            assert_eq!(make_num(3) ^ make_num(8), make_num(1));
         }
     }
 
@@ -146,5 +171,10 @@ mod tests {
             num_modulo(5) - num_modulo(7);
         }
 
+        #[test]
+        #[should_panic(expected = "Moduli do not match: 5 != 7")]
+        fn test_pow() -> () {
+            num_modulo(5) ^ num_modulo(7);
+        }
     }
 }
