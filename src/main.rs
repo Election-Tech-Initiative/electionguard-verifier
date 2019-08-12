@@ -6,7 +6,9 @@ use structopt::StructOpt;
 
 mod ballot;
 mod crypto;
+mod decryption;
 mod election;
+mod encrypted;
 mod mod_arith;
 mod trustee;
 
@@ -27,13 +29,6 @@ struct Options {
 enum Error {
     IO(io::Error),
     JSON(serde_json::Error),
-    Validation(Vec<election::Error>),
-}
-
-impl From<Vec<election::Error>> for Error {
-    fn from(error: Vec<election::Error>) -> Error {
-        Error::Validation(error)
-    }
 }
 
 impl From<io::Error> for Error {
@@ -51,16 +46,18 @@ impl From<serde_json::Error> for Error {
 fn main() -> Result<(), Error> {
     let opt = Options::from_args();
 
-    let input: election::Results = match opt.input {
+    let input: election::Record = match opt.input {
         None => from_reader(BufReader::new(stdin()))?,
         Some(path) => from_reader(BufReader::new(File::open(path)?))?,
     };
 
-    let errors = input.validate();
+    // let errors = input.validate();
 
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(errors.into())
-    }
+    // if errors.is_empty() {
+    //     Ok(())
+    // } else {
+    //     Err(errors.into())
+    // }
+
+    Ok(())
 }

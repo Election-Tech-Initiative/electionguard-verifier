@@ -1,77 +1,63 @@
-use num::bigint::BigUint;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use crate::ballot::{self, EncryptedBallot};
+use crate::decryption;
+use crate::encrypted;
 use crate::trustee;
 
-mod parameters;
+/// All the parameters necessary to form the election.
+#[derive(Serialize, Deserialize)]
+pub struct Parameters {
+    /// The date on which the election takes place.
+    date: String,
 
-pub use parameters::Parameters;
+    /// The generator `g` of the multiplicative subgroup `Z^*_q`,
+    /// where `p = 2q + 1`.
+    generator: u64,
 
-#[derive(Deserialize)]
-pub struct Results {
+    /// The location where the election takes place
+    location: String,
+
+    /// The number of election trustees `n`.
+    num_trustees: u64,
+
+    /// The safe prime modulus `p`
+    prime: u64,
+
+    /// The threshold `k` of trustees required to complete
+    /// verification.
+    threshold: u64,
+}
+
+/// All data from an ElectionGuard election
+#[derive(Serialize, Deserialize)]
+pub struct Record {
+    /// The base hash `Q` which is a SHA-256 hash of eleciton
+    /// parameters including the prime modulus, generator, number of
+    /// trustees, decryption threshold value, date, and jurisdictional
+    /// information, as well as the contest configurations.
+    base_hash: String,
+
+    /// The encrypted ballots cast in the election.
+    cast_ballots: Vec<encrypted::Ballot>,
+
+    /// The decryptions of the tallies of each option for each
+    /// contests in the election.
+    contest_tallies: Vec<Vec<decryption::Tally>>,
+
+    /// The extended base hash `Q̅`.
+    extended_base_hash: String,
+
+    /// The election public key `K`.
+    joint_public_key: u64,
+
     parameters: Parameters,
 
-    /// The base hash which is a SHA-256 hash of parameters
-    #[serde(rename = "Q")]
-    base_hash: [u8; 32],
+    /// The decryptions of the ballots spoiled in the election,
+    /// including their encrypted selections, their decrypted
+    /// selections, the cleartext of each selection, and proofs of the
+    /// correctness of the decryptions.
+    spoiled_ballots: Vec<decryption::Ballot>,
 
-    #[serde(rename = "listOfTrusteeCommitments")]
-    trustee_committments: Vec<trustee::Committment>,
-
-    /// The election public key
-    #[serde(rename = "K")]
-    public_key: BigUint,
-
-    /// The SHA-256 hash of the trustee committments, the election
-    /// public key, and the base hash
-    #[serde(rename = "Qbar")]
-    extended_base_hash: [u8; 32],
-
-    /// All of the encrypted ballots cast in the election
-    cast_ballots: Vec<EncryptedBallot>,
-
-    /// All of the ballots that were spoiled in the election
-    spoiled_ballots: Vec<BallotDecryption>,
-
-    /// All the tallied contests in the election
-    tallies: Vec<ContestTally>,
-}
-
-#[derive(Deserialize)]
-pub struct BallotDecryption();
-
-#[derive(Deserialize)]
-pub struct ContestTally();
-
-#[derive(Debug, Clone)]
-pub enum Error {
-    Trustee { index: u32, error: trustee::Error },
-    Ballot { index: u64, error: ballot::Error },
-}
-
-impl Results {
-    pub fn validate(self: &Self) -> Vec<Error> {
-        let trustee_errors = self
-            .trustee_committments
-            .iter()
-            .flat_map(|committment| committment.verify(&self.parameters, &self.base_hash))
-            .enumerate()
-            .map(|(i, error)| Error::Trustee {
-                index: i as u32,
-                error,
-            });
-
-        let ballot_errors = self
-            .cast_ballots
-            .iter()
-            .flat_map(|ballot| ballot.verify(&self.parameters, &self.extended_base_hash))
-            .enumerate()
-            .map(|(i, error)| Error::Ballot {
-                index: i as u64,
-                error,
-            });
-
-        trustee_errors.chain(ballot_errors).collect()
-    }
+    /// The public keys/coefficient commitments for each trustee.
+    trustee_public_keys: Vec<Vec<trustee::PublicKey>>,
 }

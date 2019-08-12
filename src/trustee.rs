@@ -12,37 +12,15 @@
 //! private keys and coefficients without invalidating the proofs that
 //! they have published.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-mod coefficient;
+use crate::crypto::schnorr;
 
-use crate::crypto::Hash;
-use crate::election::Parameters;
+#[derive(Serialize, Deserialize)]
+pub struct PublicKey {
+    /// A proof of posession of the private key.
+    proof: schnorr::Proof,
 
-#[derive(Deserialize)]
-/// A trustee's committment to their published information, consisting
-/// of their `k` public key and coefficients, as well `k`
-/// non-interactive zero-knowledge Schnorr proofs of posession of the
-/// corresponding private key or coefficient.
-pub struct Committment(Vec<coefficient::Committment>);
-
-#[derive(Debug, Clone)]
-pub struct Error {
-    /// The index of the coefficient where the error occured.
-    index: u32,
-    error: coefficient::Error,
-}
-
-impl Committment {
-    pub fn verify(self: &Self, params: &Parameters, base_hash: &Hash) -> Vec<Error> {
-        self.0
-            .iter()
-            .flat_map(|committment| committment.verify(params, base_hash))
-            .enumerate()
-            .map(|(i, error)| Error {
-                index: i as u32,
-                error,
-            })
-            .collect()
-    }
+    /// An ElGamal public key.
+    public_key: i64,
 }

@@ -1,3 +1,3 @@
-pub mod hash;
-
-pub use hash::Hash;
+pub mod chaum_pederson;
+pub mod elgamal;
+pub mod schnorr;
