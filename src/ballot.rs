@@ -2,7 +2,8 @@ use serde::Deserialize;
 
 mod selection;
 
-use crate::election::{Hash, Parameters};
+use crate::crypto::Hash;
+use crate::election::Parameters;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct EncryptedBallot {

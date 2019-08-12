@@ -3,7 +3,8 @@
 use num::BigUint;
 use serde::Deserialize;
 
-use crate::election::{Hash, Parameters};
+use crate::crypto::Hash;
+use crate::election::Parameters;
 use crate::hash_all;
 
 /// The pair of values which represents a single encrypted selection:

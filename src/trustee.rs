@@ -16,8 +16,8 @@ use serde::Deserialize;
 
 mod coefficient;
 
-use crate::election::hash::Hash;
-use crate::election::parameters::Parameters;
+use crate::crypto::Hash;
+use crate::election::Parameters;
 
 #[derive(Deserialize)]
 /// A trustee's committment to their published information, consisting

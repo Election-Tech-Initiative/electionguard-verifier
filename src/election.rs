@@ -1,14 +1,12 @@
 use num::bigint::BigUint;
 use serde::Deserialize;
 
-mod ballot;
-mod hash;
-mod parameters;
-mod trustee;
+use crate::ballot::{self, EncryptedBallot};
+use crate::trustee;
 
-use ballot::EncryptedBallot;
-use hash::Hash;
-use parameters::Parameters;
+mod parameters;
+
+pub use parameters::Parameters;
 
 #[derive(Deserialize)]
 pub struct Results {

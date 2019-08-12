@@ -4,7 +4,8 @@
 use num::bigint::BigUint;
 use serde::Deserialize;
 
-use crate::election::{Hash, Parameters};
+use crate::crypto::Hash;
+use crate::election::Parameters;
 use crate::hash_all;
 
 /// The values an election trustee commits to as part of the

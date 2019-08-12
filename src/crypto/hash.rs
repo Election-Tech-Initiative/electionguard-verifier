@@ -25,7 +25,7 @@ macro_rules! hash_all {
         {
             let mut hasher: sha2::Sha256 = digest::Digest::new();
             $(
-                let bytes: std::borrow::Cow<[u8]> = crate::election::hash::AsBytes::as_bytes($x);
+                let bytes: std::borrow::Cow<[u8]> = crate::crypto::hash::AsBytes::as_bytes($x);
                 hasher = digest::Digest::chain(hasher, bytes);
             )*
             digest::Digest::result(hasher).into()
