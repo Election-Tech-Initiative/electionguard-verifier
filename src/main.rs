@@ -7,6 +7,7 @@ use structopt::StructOpt;
 mod ballot;
 mod crypto;
 mod election;
+mod mod_arith;
 mod trustee;
 
 #[structopt(
