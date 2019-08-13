@@ -1,3 +1,4 @@
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::decryption;
@@ -12,20 +13,24 @@ pub struct Parameters {
 
     /// The generator `g` of the multiplicative subgroup `Z^*_q`,
     /// where `p = 2q + 1`.
-    generator: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    generator: BigUint,
 
     /// The location where the election takes place
     location: String,
 
     /// The number of election trustees `n`.
-    num_trustees: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    num_trustees: BigUint,
 
     /// The safe prime modulus `p`
-    prime: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    prime: BigUint,
 
     /// The threshold `k` of trustees required to complete
     /// verification.
-    threshold: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    threshold: BigUint,
 }
 
 /// All data from an ElectionGuard election
@@ -48,7 +53,8 @@ pub struct Record {
     extended_base_hash: String,
 
     /// The election public key `K`.
-    joint_public_key: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    joint_public_key: BigUint,
 
     parameters: Parameters,
 

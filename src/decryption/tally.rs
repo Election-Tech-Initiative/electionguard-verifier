@@ -1,3 +1,4 @@
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::elgamal;
@@ -8,10 +9,12 @@ use super::Share;
 #[derive(Serialize, Deserialize)]
 pub struct Tally {
     /// The actual tally encrypted.
-    cleartext: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    cleartext: BigUint,
 
     /// The decrypted tally `M`.
-    decrypted_tally: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    decrypted_tally: BigUint,
 
     encrypted_tally: elgamal::Message,
 

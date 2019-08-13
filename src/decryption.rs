@@ -1,3 +1,4 @@
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::chaum_pederson;
@@ -22,7 +23,8 @@ pub struct Share {
     proof: chaum_pederson::Proof,
 
     /// The share of the decrypted message `M_i`.
-    share: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    share: BigUint,
 }
 
 /// A fragment of a missing trustee's share of a decryption, including
@@ -31,16 +33,19 @@ pub struct Share {
 pub struct Fragment {
     /// The actual fragment `M_{i,j}` which is trustee `j`'s piece of
     /// the missing trustee `i`'s share of a decryption.
-    fragment: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    fragment: BigUint,
 
     /// The LaGrange coefficient `w_{i,j}` used to compute the
     /// decryption share from the fragments.
-    lagrange_coefficient: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    lagrange_coefficient: BigUint,
 
     /// The proof that the fragment encodes the same values as the
     /// encrypted message
     proof: chaum_pederson::Proof,
 
     /// The index of the trustee who produced this fragment.
-    trustee_index: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    trustee_index: BigUint,
 }

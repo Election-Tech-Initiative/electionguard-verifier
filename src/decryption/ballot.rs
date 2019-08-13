@@ -1,3 +1,4 @@
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::ballot;
@@ -17,10 +18,12 @@ pub struct Ballot {
 #[derive(Serialize, Deserialize)]
 pub struct Selection {
     /// The actual value encrypted, so either a zero or a one.
-    cleartext: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    cleartext: BigUint,
 
     /// The decrypted message of the selection.
-    decrypted_message: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    decrypted_message: BigUint,
 
     /// The encrypted message of the selection (the one or zero).
     encrypted_message: elgamal::Message,

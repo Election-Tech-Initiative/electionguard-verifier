@@ -1,3 +1,4 @@
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::ballot;
@@ -18,7 +19,8 @@ pub struct Ballot {
 pub struct Contest {
     /// The maximum number of selections `L` that can be made in this
     /// contest.
-    max_selections: u64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    max_selections: BigUint,
 
     /// A proof that the sum of the selections is equal to `L`, by
     /// proving that their difference is zero.

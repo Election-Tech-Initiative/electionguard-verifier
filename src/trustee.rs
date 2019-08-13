@@ -12,6 +12,7 @@
 //! private keys and coefficients without invalidating the proofs that
 //! they have published.
 
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::schnorr;
@@ -22,5 +23,6 @@ pub struct PublicKey {
     proof: schnorr::Proof,
 
     /// An ElGamal public key.
-    public_key: i64,
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    public_key: BigUint,
 }
