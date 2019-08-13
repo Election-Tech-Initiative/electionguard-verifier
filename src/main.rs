@@ -23,6 +23,7 @@ struct Options {
 enum Error {
     IO(io::Error),
     JSON(serde_json::Error),
+    Verify(Vec<election::Error>),
 }
 
 impl From<io::Error> for Error {
@@ -45,13 +46,11 @@ fn main() -> Result<(), Error> {
         Some(path) => from_reader(BufReader::new(File::open(path)?))?,
     };
 
-    // let errors = input.validate();
+    let errors: Vec<election::Error> = input.verify().collect();
 
-    // if errors.is_empty() {
-    //     Ok(())
-    // } else {
-    //     Err(errors.into())
-    // }
-
-    Ok(())
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::Verify(errors))
+    }
 }

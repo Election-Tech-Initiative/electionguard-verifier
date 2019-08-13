@@ -1,7 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::elgamal;
+use crate::crypto::{elgamal, schnorr};
 use crate::decryption;
 use crate::encrypted;
 use crate::trustee;
@@ -63,4 +63,25 @@ pub struct Record {
 
     /// The public keys/coefficient commitments for each trustee.
     trustee_public_keys: Vec<Vec<trustee::PublicKey>>,
+}
+
+#[derive(Debug)]
+pub enum Error {
+    TrusteeKey(u32, schnorr::Error),
+}
+
+impl Record {
+    pub fn verify<'a>(&'a self) -> impl Iterator<Item = Error> + 'a {
+        use trustee::PublicKey;
+
+        let verify_key =
+            move |key: &'a PublicKey| key.verify(&self.parameters.group, &self.extended_base_hash);
+
+        self.trustee_public_keys
+            .iter()
+            .map(move |keys| keys.into_iter().flat_map(verify_key))
+            .enumerate()
+            .flat_map(|(i, errors)| errors.map(move |e| (i, e)))
+            .map(|(i, e)| Error::TrusteeKey(i as u32, e))
+    }
 }

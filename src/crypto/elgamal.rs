@@ -1,7 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Group {
     /// The generator `g` of the multiplicative subgroup `Z^*_q`,
     /// where `p = 2q + 1`.
