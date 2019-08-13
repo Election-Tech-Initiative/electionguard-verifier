@@ -1,6 +1,18 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
+pub struct Group {
+    /// The generator `g` of the multiplicative subgroup `Z^*_q`,
+    /// where `p = 2q + 1`.
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    pub generator: BigUint,
+
+    /// The safe prime modulus `p`
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    pub prime: BigUint,
+}
+
 /// An ElGamal message `(c, d)` encoding zero. This is useful because
 /// you can only combine two ciphertexts if they both encode zero, as
 /// in the equation `hᵘ = hᵗ⁺ᶜʳ = hᵗ (hʳ)ᶜ = d bᶜ`. This acts as a

@@ -1,6 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
+use crate::crypto::elgamal;
 use crate::decryption;
 use crate::encrypted;
 use crate::trustee;
@@ -11,11 +12,6 @@ pub struct Parameters {
     /// The date on which the election takes place.
     date: String,
 
-    /// The generator `g` of the multiplicative subgroup `Z^*_q`,
-    /// where `p = 2q + 1`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    generator: BigUint,
-
     /// The location where the election takes place
     location: String,
 
@@ -23,14 +19,13 @@ pub struct Parameters {
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     num_trustees: BigUint,
 
-    /// The safe prime modulus `p`
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    prime: BigUint,
-
     /// The threshold `k` of trustees required to complete
     /// verification.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     threshold: BigUint,
+
+    #[serde(flatten)]
+    group: elgamal::Group,
 }
 
 /// All data from an ElectionGuard election
