@@ -4,14 +4,7 @@ use std::io;
 use std::io::{stdin, BufReader};
 use structopt::StructOpt;
 
-mod ballot;
-mod crypto;
-mod decryption;
-mod deserialize;
-mod election;
-mod encrypted;
-mod mod_arith;
-mod trustee;
+use electionguard_verify::election;
 
 #[structopt(
     name = "electionguard_verify",
