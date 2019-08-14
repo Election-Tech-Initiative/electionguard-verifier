@@ -35,7 +35,8 @@ pub struct Record {
     /// parameters including the prime modulus, generator, number of
     /// trustees, decryption threshold value, date, and jurisdictional
     /// information, as well as the contest configurations.
-    base_hash: String,
+    #[serde(deserialize_with = "crate::deserialize::hash")]
+    base_hash: BigUint,
 
     /// The encrypted ballots cast in the election.
     cast_ballots: Vec<encrypted::Ballot>,
@@ -45,7 +46,8 @@ pub struct Record {
     contest_tallies: Vec<Vec<decryption::Tally>>,
 
     /// The extended base hash `Q̅`.
-    extended_base_hash: String,
+    #[serde(deserialize_with = "crate::deserialize::hash")]
+    extended_base_hash: BigUint,
 
     /// The election public key `K`.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
