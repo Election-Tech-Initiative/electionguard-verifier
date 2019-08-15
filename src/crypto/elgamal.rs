@@ -23,13 +23,13 @@ pub struct Group {
 /// The encrypted message of the selection (the one or zero).
 #[derive(Serialize, Deserialize)]
 pub struct Message {
-    /// The encoding `b = gᵐ hʳ`, where `m` is the cleartext and `h`
-    /// is the recipient public key being used for encryption.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    ciphertext: BigUint,
-
     /// The one-time public key `a = gʳ`, where `r` is the randomly
     /// generated one-time public key.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
-    public_key: BigUint,
+    pub public_key: BigUint,
+
+    /// The encoding `b = gᵐ hʳ`, where `m` is the cleartext and `h`
+    /// is the recipient public key being used for encryption.
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    pub ciphertext: BigUint,
 }
