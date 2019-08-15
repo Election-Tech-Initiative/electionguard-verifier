@@ -1,7 +1,8 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
+use std::iter;
 
-use super::elgamal;
+use super::elgamal::{Group, Message};
 
 /// A proof that the sum of the selections is equal to `L`, by proving
 /// that their difference is zero.
@@ -20,18 +21,18 @@ use super::elgamal;
 /// message.
 #[derive(Serialize, Deserialize)]
 pub struct Proof {
+    /// An ElGamal message `(α, β)` encoding zero. This is useful
+    /// because you can only combine two ciphertexts if they both
+    /// encode zero, as in the equation `hᵘ = hᵗ⁺ᶜʳ = hᵗ (hʳ)ᶜ = β
+    /// bᶜ`. This acts as a committment to the one-time private key
+    /// `t` used in this proof.
+    committment: Message,
+
     /// The challenge value `c` that is produced by hashing relevent
     /// parameters, including the original ElGamal message `(a,b)` and
     /// the zero message `(c, d)`.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     challenge: BigUint,
-
-    /// An ElGamal message `(c, d)` encoding zero. This is useful
-    /// because you can only combine two ciphertexts if they both
-    /// encode zero, as in the equation `hᵘ = hᵗ⁺ᶜʳ = hᵗ (hʳ)ᶜ = d
-    /// bᶜ`. This acts as a committment to the one-time private key
-    /// `t` used in this proof.
-    committment: elgamal::Message,
 
     /// The response `u = t + c r mod (p-1)` to the challenge `c`,
     /// where `r` is the one-time private key used to encrypt the
@@ -39,4 +40,93 @@ pub struct Proof {
     /// encrypt the zero message used in this proof.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     response: BigUint,
+}
+
+pub enum Error {
+    ResponsePublicKey,
+}
+
+impl Proof {
+    /// Verify that the response is correct:
+    /// `gᵘ = α aᶜ` and `hᵘ = β bᶜ`.
+    ///
+    /// # Parameters
+    /// - `group`: the ElGamal group for the message, `(p, g)`
+    /// - `message`: the message we want to prove encodes zero, `(a,
+    ///    b) = (gʳ, m hʳ)`, where `r` is the private key used to
+    ///    encrypt the message.
+    /// - `public_key`: the public key `h` used to encrypt the message
+    fn verify_response<'a>(
+        &'a self,
+        group: &'a Group,
+        message: &'a Message,
+        public_key: &'a BigUint,
+    ) -> impl Iterator<Item = Error> + 'a {
+        iter::empty()
+            .chain(self.verify_response_public_key(group, message))
+            .chain(self.verify_response_ciphertext(group, message, public_key))
+    }
+
+    /// Verify that the first component of the response (the one-time public key) is correct:
+    /// `gᵘ = α aᶜ`.
+    ///
+    /// # Parameters
+    /// - `group`: the ElGamal group for the message, `(p, g)`
+    /// - `message`: the message we want to prove encodes zero, `(a,
+    ///    b) = (gʳ, m hʳ)`, where `r` is the private key used to
+    ///    encrypt the message.
+    /// - `public_key`: the public key `h` used to encrypt the message
+    fn verify_response_public_key(&self, group: &Group, message: &Message) -> Option<Error> {
+        let Group {
+            generator: g,
+            prime: p,
+        } = group;
+        let Proof {
+            committment: Message {
+                public_key: alpha, ..
+            },
+            challenge: c,
+            response: u,
+        } = self;
+        let Message { public_key: a, .. } = message;
+
+        if BigUint::modpow(g, u, p) == (alpha * BigUint::modpow(a, c, p)) % p {
+            None
+        } else {
+            Some(Error::ResponsePublicKey)
+        }
+    }
+
+    /// Verify that the second component of the response (the ciphertext) is correct:
+    /// `hᵘ = β bᶜ`.
+    ///
+    /// # Parameters
+    /// - `group`: the ElGamal group for the message, `(p, g)`
+    /// - `message`: the message we want to prove encodes zero, `(a,
+    ///    b) = (gʳ, m hʳ)`, where `r` is the private key used to
+    ///    encrypt the message.
+    /// - `public_key`: the public key `h` used to encrypt the message
+    fn verify_response_ciphertext(
+        &self,
+        group: &Group,
+        message: &Message,
+        public_key: &BigUint,
+    ) -> Option<Error> {
+        let Group { prime: p, .. } = group;
+        let Proof {
+            committment: Message {
+                ciphertext: beta, ..
+            },
+            challenge: c,
+            response: u,
+        } = self;
+        let Message { ciphertext: b, .. } = message;
+        let h = public_key;
+
+        if BigUint::modpow(h, u, p) == (beta * BigUint::modpow(b, c, p)) % p {
+            None
+        } else {
+            Some(Error::ResponsePublicKey)
+        }
+    }
 }
