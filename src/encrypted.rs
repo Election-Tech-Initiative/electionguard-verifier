@@ -1,3 +1,3 @@
-mod ballot;
-
-pub use ballot::{Ballot, Contest, Selection};
+pub mod ballot;
+pub mod contest;
+pub mod selection;
