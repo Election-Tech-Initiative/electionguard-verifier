@@ -20,30 +20,44 @@ pub struct Selection {
     zero_proof: chaum_pederson::Proof,
 }
 
+#[derive(Debug)]
+pub enum ResponseError {
+    PublicKey,
+    Ciphertext,
+}
+
+#[derive(Debug)]
+pub enum Error {
+    ZeroProof(ResponseError),
+    OneProof(ResponseError),
+    Challenge,
+}
+
 impl Selection {
     pub fn verify<'a>(
         &'a self,
         group: &'a Group,
         public_key: &'a BigUint,
         extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = chaum_pederson::Error> + 'a {
-        use chaum_pederson::DisjHashInput::*;
+    ) -> impl Iterator<Item = Error> + 'a {
+        std::iter::empty()
+        // use chaum_pederson::DisjHashInput::*;
 
-        // Specify that c = H(Q̅, (α, β), (a₀, b₀), (a₁, b₁))
-        let hash_order = [
-            Custom(extended_base_hash.to_bytes_be()),
-            Message,
-            LeftCommittment,
-            RightCommittment,
-        ];
+        // // Specify that c = H(Q̅, (α, β), (a₀, b₀), (a₁, b₁))
+        // let hash_order = [
+        //     Custom(extended_base_hash.to_bytes_be()),
+        //     Message,
+        //     LeftCommittment,
+        //     RightCommittment,
+        // ];
 
-        chaum_pederson::Proof::verify_disj(
-            &self.one_proof,
-            &self.zero_proof,
-            group,
-            &self.message,
-            public_key,
-            &hash_order,
-        )
+        // chaum_pederson::Proof::verify_disj(
+        //     &self.one_proof,
+        //     &self.zero_proof,
+        //     group,
+        //     &self.message,
+        //     public_key,
+        //     &hash_order,
+        // )
     }
 }

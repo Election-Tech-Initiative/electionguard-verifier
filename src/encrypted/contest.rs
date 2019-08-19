@@ -1,7 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use super::selection::Selection;
+use super::selection::{self, Selection };
 use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal::Group;
 
@@ -24,7 +24,7 @@ pub struct Contest {
 
 #[derive(Debug)]
 pub enum Error {
-    ZeroOne(chaum_pederson::Error),
+    Selection(selection::Error),
 }
 
 impl Contest {
@@ -37,6 +37,6 @@ impl Contest {
         self.selections
             .iter()
             .flat_map(move |sel| sel.verify(group, public_key, extended_base_hash))
-            .map(|e| Error::ZeroOne(e))
+            .map(|e| Error::Selection(e))
     }
 }
