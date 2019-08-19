@@ -1,7 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use super::selection::{self, Selection };
+use super::selection::{self, Selection};
 use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal::Group;
 

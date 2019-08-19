@@ -1,10 +1,7 @@
-use digest::Digest;
 use num::BigUint;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
-use std::iter;
 
-use super::elgamal::{self, Group, Message};
+use super::elgamal::{Group, Message};
 
 /// A proof that the sum of the selections is equal to `L`, by proving
 /// that their difference is zero.
