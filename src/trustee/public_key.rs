@@ -42,12 +42,12 @@ impl PublicKey {
         group: &'a Group,
         extended_base_hash: &'a BigUint,
     ) -> impl Iterator<Item = Error> + 'a {
-        let challenge_error =
-            if self.expected_challenge(extended_base_hash) == self.proof.challenge {
-                None
-            } else {
-                Some(Error::ProofChallenge)
-            };
+        let challenge_error = if self.expected_challenge(extended_base_hash) == self.proof.challenge
+        {
+            None
+        } else {
+            Some(Error::ProofChallenge)
+        };
 
         let response_error = if self.proof.verify_response(group, &self.public_key) {
             None

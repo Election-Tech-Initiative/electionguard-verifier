@@ -2,10 +2,10 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 use std::iter;
 
-use crate::crypto::elgamal;
+use crate::crypto::elgamal::{self, Group};
 use crate::decryption;
 use crate::encrypted;
-use crate::trustee;
+use crate::trustee::{self, public_key::PublicKey};
 
 /// All the parameters necessary to form the election.
 #[derive(Serialize, Deserialize)]
@@ -63,31 +63,33 @@ pub struct Record {
     spoiled_ballots: Vec<decryption::Ballot>,
 
     /// The public keys/coefficient commitments for each trustee.
-    trustee_public_keys: Vec<Vec<trustee::public_key::PublicKey>>,
+    trustee_public_keys: Vec<Vec<PublicKey>>,
 }
 
 #[derive(Debug)]
 pub enum Error {
-    TrusteeKey(u32, trustee::public_key::Error),
+    TrusteeKey(u32, trustee::Error),
     Ballot(u32, encrypted::contest::Error),
 }
 
 impl Record {
     pub fn verify<'a>(&'a self) -> impl Iterator<Item = Error> + 'a {
         iter::empty()
-            .chain(self.verify_trustee_keys())
+            .chain(Self::verify_trustee_keys(
+                &self.trustee_public_keys,
+                &self.parameters.group,
+                &self.extended_base_hash,
+            ))
             .chain(self.verify_cast_ballots())
     }
 
-    fn verify_trustee_keys<'a>(&'a self) -> impl Iterator<Item = Error> + 'a {
-        use trustee::public_key::PublicKey;
-
-        let verify_key =
-            move |key: &'a PublicKey| key.verify(&self.parameters.group, &self.extended_base_hash);
-
-        self.trustee_public_keys
-            .iter()
-            .map(move |keys| keys.iter().flat_map(verify_key))
+    fn verify_trustee_keys<'a>(
+        keys: &'a [Vec<PublicKey>],
+        group: &'a Group,
+        extended_base_hash: &'a BigUint,
+    ) -> impl Iterator<Item = Error> + 'a {
+        keys.into_iter()
+            .map(move |keys| trustee::verify_keys(keys, group, extended_base_hash))
             .enumerate()
             .flat_map(|(i, errors)| errors.map(move |e| (i, e)))
             .map(|(i, e)| Error::TrusteeKey(i as u32, e))
