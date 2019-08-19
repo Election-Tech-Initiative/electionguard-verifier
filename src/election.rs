@@ -79,7 +79,7 @@ impl Record {
 
         self.trustee_public_keys
             .iter()
-            .map(move |keys| keys.into_iter().flat_map(verify_key))
+            .map(move |keys| keys.iter().flat_map(verify_key))
             .enumerate()
             .flat_map(|(i, errors)| errors.map(move |e| (i, e)))
             .map(|(i, e)| Error::TrusteeKey(i as u32, e))

@@ -39,8 +39,7 @@ impl PublicKey {
         proof.verify(&group, public_key, move |d: Sha256, k| {
             let d = d.chain(&extended_base_hash.to_bytes_be());
             let d = d.chain(&public_key.to_bytes_be());
-            let d = d.chain(k);
-            d
+            d.chain(k)
         })
     }
 }

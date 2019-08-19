@@ -68,6 +68,7 @@ impl Proof {
         }
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn verify_response(&self, group: &Group, public_key: &BigUint) -> Option<Error> {
         let Group {
             generator: g,
