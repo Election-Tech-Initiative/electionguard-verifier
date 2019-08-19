@@ -2,7 +2,7 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 use std::iter;
 
-use crate::crypto::{elgamal, schnorr};
+use crate::crypto::elgamal;
 use crate::decryption;
 use crate::encrypted;
 use crate::trustee;
@@ -63,12 +63,12 @@ pub struct Record {
     spoiled_ballots: Vec<decryption::Ballot>,
 
     /// The public keys/coefficient commitments for each trustee.
-    trustee_public_keys: Vec<Vec<trustee::PublicKey>>,
+    trustee_public_keys: Vec<Vec<trustee::public_key::PublicKey>>,
 }
 
 #[derive(Debug)]
 pub enum Error {
-    TrusteeKey(u32, schnorr::Error),
+    TrusteeKey(u32, trustee::public_key::Error),
     Ballot(u32, encrypted::contest::Error),
 }
 
@@ -80,7 +80,7 @@ impl Record {
     }
 
     fn verify_trustee_keys<'a>(&'a self) -> impl Iterator<Item = Error> + 'a {
-        use trustee::PublicKey;
+        use trustee::public_key::PublicKey;
 
         let verify_key =
             move |key: &'a PublicKey| key.verify(&self.parameters.group, &self.extended_base_hash);
