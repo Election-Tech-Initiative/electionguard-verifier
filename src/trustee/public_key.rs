@@ -65,6 +65,8 @@ impl PublicKey {
             &self.proof.committment,
         ]
         .into_iter()
+        // copied here is necessary but unintuitive:
+        // https://developers.redhat.com/blog/2019/03/22/rust-all-hands-2019-array-iterators-rayon-and-more/
         .copied()
         .map(BigUint::to_bytes_be)
         .fold(Sha256::new(), Sha256::chain)
