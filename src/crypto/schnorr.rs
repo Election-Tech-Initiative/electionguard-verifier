@@ -1,7 +1,10 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
+use std::iter;
 
 use super::elgamal::Group;
+use super::hash;
 
 /// A proof of posession of the private key.
 ///
@@ -28,9 +31,41 @@ pub struct Proof {
     pub response: BigUint,
 }
 
+#[derive(Debug)]
+pub enum Error {
+    Challenge,
+    Response,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum HashInput {
+    Committment,
+}
+
 impl Proof {
+    pub fn check<'a>(
+        &'a self,
+        group: &Group,
+        public_key: &BigUint,
+        spec: hash::Spec<HashInput>,
+    ) -> impl Iterator<Item = Error> + 'a {
+        let challenge_error = if self.is_challenge_ok(spec) {
+            None
+        } else {
+            Some(Error::Challenge)
+        };
+
+        let response_error = if self.is_response_ok(group, public_key) {
+            None
+        } else {
+            Some(Error::Response)
+        };
+
+        iter::empty().chain(challenge_error).chain(response_error)
+    }
+
     #[allow(clippy::many_single_char_names)]
-    pub fn verify_response(&self, group: &Group, public_key: &BigUint) -> bool {
+    fn is_response_ok(&self, group: &Group, public_key: &BigUint) -> bool {
         let Group {
             generator: g,
             prime: p,
@@ -43,5 +78,13 @@ impl Proof {
         let h = public_key;
 
         BigUint::modpow(g, u, p) == (k * BigUint::modpow(h, c, p)) % p
+    }
+
+    fn is_challenge_ok(&self, spec: hash::Spec<HashInput>) -> bool {
+        let expected = spec.exec::<_, Sha256>(|x| match x {
+            HashInput::Committment => &self.committment,
+        });
+
+        expected == self.challenge
     }
 }

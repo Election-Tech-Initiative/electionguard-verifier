@@ -89,7 +89,7 @@ impl Record {
         extended_base_hash: &'a BigUint,
     ) -> impl Iterator<Item = Error> + 'a {
         keys.into_iter()
-            .map(move |keys| trustee::verify_keys(keys, group, extended_base_hash))
+            .map(move |keys| trustee::check_keys(keys, group, extended_base_hash))
             .enumerate()
             .flat_map(|(i, errors)| errors.map(move |e| (i, e)))
             .map(|(i, e)| Error::TrusteeKey(i as u32, e))

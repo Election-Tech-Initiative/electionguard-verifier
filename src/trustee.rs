@@ -4,26 +4,26 @@ use crate::crypto::elgamal::Group;
 
 pub mod public_key;
 
+use crate::crypto::schnorr;
 use public_key::PublicKey;
 
 #[derive(Debug)]
 pub struct Error {
     key_index: u32,
-    error: public_key::Error,
+    error: schnorr::Error,
 }
 
-pub fn verify_keys<'a>(
+pub fn check_keys<'a>(
     keys: &'a [PublicKey],
     group: &'a Group,
     extended_base_hash: &'a BigUint,
 ) -> impl Iterator<Item = Error> + 'a {
     keys.into_iter()
-        .map(move |key| key.verify(group, extended_base_hash))
+        .map(move |key| key.check(group, extended_base_hash))
         .enumerate()
-        .flat_map(|(i, errors)| {
-            errors.map(move |e| Error {
-                key_index: i as u32,
-                error: e,
-            })
+        .flat_map(|(i, errors)| errors.map(move |e| (i, e)))
+        .map(|(i, error)| Error {
+            key_index: i as u32,
+            error,
         })
 }

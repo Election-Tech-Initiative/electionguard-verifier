@@ -12,66 +12,37 @@
 //! private keys and coefficients without invalidating the proofs that
 //! they have published.
 
-use digest::Digest;
 use num::BigUint;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
-use std::iter;
 
-use crate::crypto::{elgamal::Group, schnorr};
+use crate::crypto::{elgamal::Group, hash, schnorr};
 
 #[derive(Serialize, Deserialize)]
 pub struct PublicKey {
-    /// A proof of posession of the private key.
-    proof: schnorr::Proof,
-
     /// An ElGamal public key.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     public_key: BigUint,
-}
 
-#[derive(Debug)]
-pub enum Error {
-    ProofChallenge,
-    ProofResponse,
+    /// A proof of posession of the private key.
+    proof: schnorr::Proof,
 }
 
 impl PublicKey {
-    pub fn verify<'a>(
+    pub fn check<'a>(
         &'a self,
         group: &'a Group,
         extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = Error> + 'a {
-        let challenge_error = if self.expected_challenge(extended_base_hash) == self.proof.challenge
-        {
-            None
-        } else {
-            Some(Error::ProofChallenge)
-        };
+    ) -> impl Iterator<Item = schnorr::Error> + 'a {
+        use hash::Input::{External, Proof};
+        use schnorr::HashInput::Committment;
 
-        let response_error = if self.proof.verify_response(group, &self.public_key) {
-            None
-        } else {
-            Some(Error::ProofResponse)
-        };
+        let hash_args = [
+            External(extended_base_hash),
+            External(&self.public_key),
+            Proof(Committment),
+        ];
 
-        iter::empty().chain(challenge_error).chain(response_error)
-    }
-
-    fn expected_challenge(&self, extended_base_hash: &BigUint) -> BigUint {
-        let hash = [
-            extended_base_hash,
-            &self.public_key,
-            &self.proof.committment,
-        ]
-        .into_iter()
-        // copied here is necessary but unintuitive:
-        // https://developers.redhat.com/blog/2019/03/22/rust-all-hands-2019-array-iterators-rayon-and-more/
-        .copied()
-        .map(BigUint::to_bytes_be)
-        .fold(Sha256::new(), Sha256::chain)
-        .result();
-
-        BigUint::from_bytes_be(hash.as_slice())
+        self.proof
+            .check(group, &self.public_key, hash::Spec(&hash_args))
     }
 }
