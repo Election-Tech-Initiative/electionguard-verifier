@@ -1,7 +1,6 @@
 use serde_json::from_reader;
 use std::fs::File;
-use std::io;
-use std::io::{stdin, BufReader};
+use std::io::{self, stdin, BufReader};
 use structopt::StructOpt;
 
 use electionguard_verify::election;
@@ -23,7 +22,6 @@ struct Options {
 enum Error {
     IO(io::Error),
     JSON(serde_json::Error),
-    Verify(Vec<election::Error>),
 }
 
 impl From<io::Error> for Error {
@@ -38,7 +36,7 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-fn main() -> Result<(), Error> {
+fn run() -> Result<election::Status, Error> {
     let opt = Options::from_args();
 
     let input: election::Record = match opt.input {
@@ -46,11 +44,31 @@ fn main() -> Result<(), Error> {
         Some(path) => from_reader(BufReader::new(File::open(path)?))?,
     };
 
-    let errors: Vec<election::Error> = input.verify().collect();
+    Ok(input.check())
+}
 
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(Error::Verify(errors))
+const EXIT_SUCCESS: i32 = 0;
+const EXIT_FAILURE: i32 = 1;
+const EXIT_IO_ERROR: i32 = 74; // EX_IOERR
+const EXIT_PARSE_ERROR: i32 = 65; // EX_DATAERR
+
+fn main() {
+    match run() {
+        Ok(status) => {
+            if status.is_ok() {
+                std::process::exit(EXIT_SUCCESS)
+            } else {
+                eprintln!("{:?}", status);
+                std::process::exit(EXIT_FAILURE)
+            }
+        }
+        Err(Error::IO(e)) => {
+            eprintln!("{}", e);
+            std::process::exit(EXIT_IO_ERROR)
+        }
+        Err(Error::JSON(e)) => {
+            eprintln!("{}", e);
+            std::process::exit(EXIT_PARSE_ERROR)
+        }
     }
 }

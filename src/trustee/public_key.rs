@@ -15,7 +15,8 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::{elgamal::Group, hash, schnorr};
+use crate::crypto::schnorr::{self, Status};
+use crate::crypto::{elgamal::Group, hash};
 
 #[derive(Serialize, Deserialize)]
 pub struct PublicKey {
@@ -28,11 +29,7 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn check<'a>(
-        &'a self,
-        group: &'a Group,
-        extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = schnorr::Error> + 'a {
+    pub fn check(&self, group: &Group, extended_base_hash: &BigUint) -> Status {
         use hash::Input::{External, Proof};
         use schnorr::HashInput::Committment;
 

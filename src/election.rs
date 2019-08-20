@@ -1,11 +1,11 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
-use std::iter;
 
 use crate::crypto::elgamal::{self, Group};
+use crate::crypto::schnorr;
 use crate::decryption;
 use crate::encrypted;
-use crate::trustee::{self, public_key::PublicKey};
+use crate::trustee::public_key::PublicKey;
 
 /// All the parameters necessary to form the election.
 #[derive(Serialize, Deserialize)]
@@ -66,50 +66,41 @@ pub struct Record {
     trustee_public_keys: Vec<Vec<PublicKey>>,
 }
 
-#[derive(Debug)]
-pub enum Error {
-    TrusteeKey(u32, trustee::Error),
-    Ballot(u32, encrypted::contest::Error),
+#[derive(Debug, Serialize)]
+pub struct Status {
+    trustee_public_keys: Vec<Vec<schnorr::Status>>,
 }
 
 impl Record {
-    pub fn verify<'a>(&'a self) -> impl Iterator<Item = Error> + 'a {
-        iter::empty()
-            .chain(Self::verify_trustee_keys(
+    pub fn check(&self) -> Status {
+        Status {
+            trustee_public_keys: check_trustee_public_keys(
                 &self.trustee_public_keys,
                 &self.parameters.group,
                 &self.extended_base_hash,
-            ))
-            .chain(self.verify_cast_ballots())
+            ),
+        }
     }
+}
 
-    fn verify_trustee_keys<'a>(
-        keys: &'a [Vec<PublicKey>],
-        group: &'a Group,
-        extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = Error> + 'a {
-        keys.into_iter()
-            .map(move |keys| trustee::check_keys(keys, group, extended_base_hash))
-            .enumerate()
-            .flat_map(|(i, errors)| errors.map(move |e| (i, e)))
-            .map(|(i, e)| Error::TrusteeKey(i as u32, e))
-    }
-
-    fn verify_cast_ballots<'a>(&'a self) -> impl Iterator<Item = Error> + 'a {
-        use encrypted::ballot::Ballot;
-
-        let verify_ballot = move |ballot: &'a Ballot| {
-            ballot.verify(
-                &self.parameters.group,
-                &self.joint_public_key,
-                &self.extended_base_hash,
-            )
-        };
-
-        self.cast_ballots
+impl Status {
+    pub fn is_ok(&self) -> bool {
+        self.trustee_public_keys
             .iter()
-            .flat_map(verify_ballot)
-            .enumerate()
-            .map(|(i, e)| Error::Ballot(i as u32, e))
+            .all(|keys| keys.iter().all(schnorr::Status::is_ok))
     }
+}
+
+fn check_trustee_public_keys(
+    keys: &[Vec<PublicKey>],
+    group: &Group,
+    extended_base_hash: &BigUint,
+) -> Vec<Vec<schnorr::Status>> {
+    keys.into_iter()
+        .map(|keys| {
+            keys.iter()
+                .map(|key| key.check(group, extended_base_hash))
+                .collect()
+        })
+        .collect()
 }

@@ -36,7 +36,7 @@ impl<'a, P: 'a + Copy> Spec<'a, P> {
     where
         R: 'a + Fn(P) -> &'a BigUint,
     {
-        self.0.into_iter().copied().map(move |i| match i {
+        self.0.iter().copied().map(move |i| match i {
             Input::External(x) => x,
             Input::Proof(x) => resolver(x),
         })
