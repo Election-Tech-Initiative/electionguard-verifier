@@ -1,0 +1,28 @@
+#+TITLE: ElectionGuard Verifier
+
+* TODO
+
+- [X] Check proofs of public key posession
+- [ ] Check proofs of selection being 0/1
+- [ ] Check proofs of correct numbers of selections
+- [ ] Check proofs of decryption for spoiled ballots (fragments and shares)
+- [ ] Check proofs of decryption for tallies (fragments and shares) 
+- [ ] Add optimized method for checking CP proofs where the message is
+  the quotient of two messages; we can avoid a division
+- [ ] Generalize hash interface to not use BigUint. Maybe use bytes,
+  or be more general to handle whole messages and automatically
+  convert to bytes.
+- [ ] Investigate if we want to reuse input struct for error shape by
+  paremetrizing over annotations
+- [ ] Think about never ever using vecs of vecs, but always making an
+  intermediate struct. It feels like everything is easier that way
+- [ ] Use the num type to avoid explicit mod
+- [ ] Add option to link against [[https://github.com/verificatum/verificatum-gmpmee][GIMP Verificatum]]
+- [ ] Generate types more automatically from [[https://quicktype.io][quicktype]], see also [fn:1]
+- [ ] Look into lazy trees or something (nested iterators?) to avoid
+  unnecessary allocation for errors/statuses when all we want to do is
+  print them out one by one
+
+* Footnotes
+
+[fn:1] https://blog.quicktype.io/customizing-quicktype
