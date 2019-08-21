@@ -1,8 +1,8 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal::{self, Group};
+use crate::crypto::{chaum_pederson, hash};
 
 /// A single selection in a contest, which contains the encrypted
 /// value of the selection (zero or one), as well as a zero-knowledge
@@ -13,51 +13,49 @@ use crate::crypto::elgamal::{self, Group};
 /// verification go through. The verifier cannot and (need not)
 /// determine which proof is "real" and which is "faked", but instead
 /// verifies that one of them must be real.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Selection {
     message: elgamal::Message,
-    one_proof: chaum_pederson::Proof,
-    zero_proof: chaum_pederson::Proof,
+    #[serde(flatten)]
+    proof: chaum_pederson::disj::Proof,
 }
 
-#[derive(Debug)]
-pub enum ResponseError {
-    PublicKey,
-    Ciphertext,
-}
-
-#[derive(Debug)]
-pub enum Error {
-    ZeroProof(ResponseError),
-    OneProof(ResponseError),
-    Challenge,
+#[derive(Debug, Serialize)]
+pub struct Status {
+    proof: chaum_pederson::disj::Status,
 }
 
 impl Selection {
-    pub fn verify<'a>(
+    pub fn check<'a>(
         &'a self,
         group: &'a Group,
         public_key: &'a BigUint,
         extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = Error> + 'a {
-        std::iter::empty()
-        // use chaum_pederson::DisjHashInput::*;
+    ) -> Status {
+        use chaum_pederson::disj::HashInput::{Left, Right};
+        use chaum_pederson::HashInput::{CommittmentCiphertext, CommittmentPublicKey};
+        use hash::Input::{External, Proof};
 
-        // // Specify that c = H(Q̅, (α, β), (a₀, b₀), (a₁, b₁))
-        // let hash_order = [
-        //     Custom(extended_base_hash.to_bytes_be()),
-        //     Message,
-        //     LeftCommittment,
-        //     RightCommittment,
-        // ];
+        let hash_args = [
+            External(extended_base_hash),
+            External(&self.message.public_key),
+            External(&self.message.ciphertext),
+            Proof(Left(CommittmentCiphertext)),
+            Proof(Left(CommittmentPublicKey)),
+            Proof(Right(CommittmentCiphertext)),
+            Proof(Right(CommittmentPublicKey)),
+        ];
 
-        // chaum_pederson::Proof::verify_disj(
-        //     &self.one_proof,
-        //     &self.zero_proof,
-        //     group,
-        //     &self.message,
-        //     public_key,
-        //     &hash_order,
-        // )
+        Status {
+            proof: self
+                .proof
+                .check(group, &self.message, public_key, hash::Spec(&hash_args)),
+        }
+    }
+}
+
+impl Status {
+    pub fn is_ok(&self) -> bool {
+        self.proof.is_ok()
     }
 }

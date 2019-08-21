@@ -1,7 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Group {
     /// The generator `g` of the multiplicative subgroup `Z^*_q`,
     /// where `p = 2q + 1`.
@@ -21,7 +21,7 @@ pub struct Group {
 /// A message that has been encrypted using exponential ElGamal.
 ///
 /// The encrypted message of the selection (the one or zero).
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     /// The one-time public key `a = gʳ`, where `r` is the randomly
     /// generated one-time public key.

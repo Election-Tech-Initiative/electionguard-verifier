@@ -22,21 +22,30 @@ pub struct Contest {
     selections: Vec<Selection>,
 }
 
-#[derive(Debug)]
-pub enum Error {
-    Selection(selection::Error),
+#[derive(Debug, Serialize)]
+pub struct Status {
+    selections: Vec<selection::Status>,
 }
 
 impl Contest {
-    pub fn verify<'a>(
+    pub fn check<'a>(
         &'a self,
         group: &'a Group,
         public_key: &'a BigUint,
         extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = Error> + 'a {
-        self.selections
-            .iter()
-            .flat_map(move |sel| sel.verify(group, public_key, extended_base_hash))
-            .map(|e| Error::Selection(e))
+    ) -> Status {
+        Status {
+            selections: self
+                .selections
+                .iter()
+                .map(move |sel| sel.check(group, public_key, extended_base_hash))
+                .collect(),
+        }
+    }
+}
+
+impl Status {
+    pub fn is_ok(&self) -> bool {
+        self.selections.iter().all(selection::Status::is_ok)
     }
 }

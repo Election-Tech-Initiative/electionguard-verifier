@@ -15,15 +15,30 @@ pub struct Ballot {
     contests: Vec<Contest>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct Status {
+    contests: Vec<contest::Status>,
+}
+
 impl Ballot {
-    pub fn verify<'a>(
-        &'a self,
-        group: &'a Group,
-        public_key: &'a BigUint,
-        extended_base_hash: &'a BigUint,
-    ) -> impl Iterator<Item = contest::Error> + 'a {
-        self.contests
-            .iter()
-            .flat_map(move |contest| contest.verify(group, public_key, extended_base_hash))
+    pub fn check(
+        &self,
+        group: &Group,
+        public_key: &BigUint,
+        extended_base_hash: &BigUint,
+    ) -> Status {
+        Status {
+            contests: self
+                .contests
+                .iter()
+                .map(move |contest| contest.check(group, public_key, extended_base_hash))
+                .collect(),
+        }
+    }
+}
+
+impl Status {
+    pub fn is_ok(&self) -> bool {
+        self.contests.iter().all(contest::Status::is_ok)
     }
 }

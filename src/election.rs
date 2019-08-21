@@ -69,38 +69,65 @@ pub struct Record {
 #[derive(Debug, Serialize)]
 pub struct Status {
     trustee_public_keys: Vec<Vec<schnorr::Status>>,
+    cast_ballots: Vec<encrypted::ballot::Status>,
 }
 
 impl Record {
     pub fn check(&self) -> Status {
         Status {
-            trustee_public_keys: check_trustee_public_keys(
+            trustee_public_keys: Self::check_trustee_public_keys(
                 &self.trustee_public_keys,
                 &self.parameters.group,
                 &self.extended_base_hash,
             ),
+            cast_ballots: Self::check_cast_ballots(
+                &self.cast_ballots,
+                &self.parameters.group,
+                &self.joint_public_key,
+                &self.extended_base_hash,
+            ),
         }
+    }
+
+    fn check_trustee_public_keys(
+        keys: &[Vec<PublicKey>],
+        group: &Group,
+        extended_base_hash: &BigUint,
+    ) -> Vec<Vec<schnorr::Status>> {
+        keys.iter()
+            .map(|keys| {
+                keys.iter()
+                    .map(|key| key.check(group, extended_base_hash))
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn check_cast_ballots(
+        ballots: &[encrypted::ballot::Ballot],
+        group: &Group,
+        public_key: &BigUint,
+        extended_base_hash: &BigUint,
+    ) -> Vec<encrypted::ballot::Status> {
+        ballots
+            .iter()
+            .map(|ballot| ballot.check(group, public_key, extended_base_hash))
+            .collect()
     }
 }
 
 impl Status {
     pub fn is_ok(&self) -> bool {
-        self.trustee_public_keys
-            .iter()
+        Self::is_trustee_public_keys_ok(&self.trustee_public_keys)
+            && Self::is_cast_ballots_ok(&self.cast_ballots)
+    }
+
+    fn is_trustee_public_keys_ok(keys: &[Vec<schnorr::Status>]) -> bool {
+        keys.iter()
             .all(|keys| keys.iter().all(schnorr::Status::is_ok))
     }
-}
 
-fn check_trustee_public_keys(
-    keys: &[Vec<PublicKey>],
-    group: &Group,
-    extended_base_hash: &BigUint,
-) -> Vec<Vec<schnorr::Status>> {
-    keys.into_iter()
-        .map(|keys| {
-            keys.iter()
-                .map(|key| key.check(group, extended_base_hash))
-                .collect()
-        })
-        .collect()
+    fn is_cast_ballots_ok(ballots: &[encrypted::ballot::Status]) -> bool {
+        ballots.iter().all(encrypted::ballot::Status::is_ok)
+    }
 }
