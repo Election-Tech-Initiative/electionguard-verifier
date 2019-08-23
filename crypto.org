@@ -1,0 +1,377 @@
+#+TITLE: Everything You Need To Know About Cryptography to Check an Election
+#+AUTHOR: Jake Waksbaum
+#+EMAIL: jwaksbaum@galois.com
+#+DATE: <2019-08-22 Thu>
+#+LANGUAGE:  en
+#+OPTIONS: ':t
+#+INFOJS_OPT: view:showall toc:t ltoc:t mouse:underline path:http://orgmode.org/org-info.js
+#+STARTUP: latexpreview
+
+This is based on Josh's document, Wikipedia articles, and a [[http://wwwmayr.in.tum.de/konferenzen/Jass05/courses/1/papers/meier_paper.pdf][few]] [[https://groups.csail.mit.edu/cis/crypto/classes/6.857/papers/elgamal.pdf][other]] [[www.cs.virginia.edu/dwu4/notes/CS355LectureNotes.pdf
+ ][articles]].
+ 
+I've tried to structure this document so that in can be read all the
+way through like a story. You can also skip to the last section which
+says everything you need to check for an election, and it should
+reference the relevent parts of the document, so you can hop around
+there like a tree.
+
+* Introduction
+
+Our goal is to use cryptography to allow any voter to check that their
+vote was accurately included in the final tally, without them having
+to trust the people running the election. This doesn't encompass
+everything we would want to be able to guarantee about an election.
+For example, this doesn't ensure that the people running the election
+didn't create a bunch of well-formed but fake ballots.
+
+One simple way to do that is to publish everone's votes. We don't want
+to do that, because it is a violation of people's privacy, and because
+it allows for voter manipulation schemes. For example, someone can pay
+you to vote a certain way. Even if votes aren't associated with
+particular voters, ballots in the US include enough unimportant races
+to allow people to encode unique identifiers in the selections of
+those unimportant races. Therefore we want to keep ballots private.
+
+One good way to do this is *homomorphic encryption*. A homomorphism is
+mapping between structures that preserves their structures, so
+homomorphic encryption allows us to perform operations on the
+encrypted messages that correspond to operations on the cleartext. For
+example, if we say that $E$ is the Exponential ElGamal encryption
+function, for messages $m_1$ and $m_2$, $$ E(m_1) \cdot E(m_2) =
+E(m_1 + m_2) $$ If those messages are bit vectors of selections, then
+we have a way to tally votes while they remain encrypted. There's a
+lot more to it than that, but this hints at a scheme where we can
+publish everyone's encrypted votes and anyone can double check the
+addition.
+
+Using homomorphic encryption, here are the steps in the process of
+casting a vote:
+1. The voter submits their selections to a machine, which encrypts it
+   and records it.
+2. The encrypted votes are gathered.
+3. The encrypted votes are tallied.
+4. The encrypted tally is decrypted.
+
+Each of those 4 steps can be independently verified to have been
+completed without tampering.
+
+* Eine Kleine Group Theory
+ElGamal encryption is based on the difficulty of the [[https://en.wikipedia.org/wiki/Discrete_logarithm][discrete log
+problem]]: take some group $G$ with identity element $1$ and group
+operation $\cdot$. If it's helpful, we can pretend that the group is
+the multiplicative group of integers modulo $p$
+($\mathbb{Z}_p^{\times}$) for some prime $p$ because it will be soon.
+The discret logarithm problem is, given some base element $b$ and some
+element $a$, to find the $k$ such that $$ b^k = a $$ This is analagous
+to a logarithm, because $\log_b a$ is defined as the number satisfying
+$$ b^{\log_b a} = a $$ We have reason to believe that the discrete
+logarithm problem is really hard, mostly because no one has figured
+out how to do it yet.
+
+For ElGamal encryption, we work in the multiplicative group of
+integers modulo $p$ ($\mathbb{Z}_p^{\times}$) for some prime $p$, or
+some subgroup of it. Let's call that (sub)group $G$. $p$ should be big
+and also [[https://en.wikipedia.org/wiki/Safe_prime][safe]], so just use [[https://tools.ietf.org/html/rfc3526#section-5][this one]].
+
+We also need a generator $g$ for the (sub)group, which just means that
+if we take all the numbers $g^1, g^2, \ldots, g^{|G|-1}$, we get all
+the $|G|$ elements of the (sub)group in some order. Note that in this
+case $|G| = p - 1$, because $p \equiv 0 \pmod p$, so we have the $p-1$
+numbers $0, 1, \ldots, p-1$, or, if you prefer, $1, 2, \ldots, p$.
+
+** TODO Explain the bit about the different group exponents live in
+
+* ElGamal and Exponential ElGamal
+
+What does it mean to encrypt something with ElGamal or Exponential
+ElGamal encryption, and why does the above homomorphic property hold?
+
+** ElGamal Encryption
+
+*** Key Generation
+
+Now we have an asymmetric encryption scheme. First we have to generate
+some a keypair: TODO is it p-1?
+1. Choose some random element $s \in G$; this will be your *private key*.
+2. Let $h = g^s$. This will be your *public key*. Since the discrete
+   log problem is hard, no one can figure out your private key from
+   your public key, which is good.
+3. Publish your public key $h$ far and wide.
+
+*** Encryption and Decryption
+
+Suppose your friend wants to send you a secret message $m$. They
+encrypt it:
+1. Choose some random element $r \in G$. You can think of this as a
+   /one-time private key/.
+2. Let $k = g^r$. You can think of this as your /one-time public key/.
+3. Publish $(k, m \cdot h^r)$. I'll refer to the first element of the
+   pair as the /one-time public key/, the second element as the
+   /ciphertext/, and the whole pair as the /encrypted message/.
+
+   This works well, because $h^r = g^{rs}$ acts as a shared secret
+   between you and your friend, because
+   $$ g^{rs} = h^r = k^s $$
+   You can know it by knowing your public key $h = g^s$ and the
+   one-time private key $r$, like your friend does, or by knowing the
+   one-time public key $k = g^r$ and your private key $s$, as you do.
+
+   If you know that shared secret $g^{rs}$, you can divide the
+   ciphertext by it to produce the cleartext \(m\)!
+
+* Let's Get Exponential
+
+But what about that nice homomorphic property? To get that, we make
+one small tweak: instead of forming the ciphertext as $m \cdot g^{rs}$
+where $g^{rs}$ is that shared secret, we use $g^m \cdot g^{rs}$. Then
+we can multiply our encrypted messages, and by the magic of
+exponentiation identities, the homomorphic property falls out!
+
+\begin{aligned}
+   & E_{r_1}(m_1) \cdot E_{r_2}(m_2) \\
+={}& (g^{r_1}, g^{m_1} h^{r_1}) \cdot (g^{r_2}, g^{m_2} h^{r_2}) \\
+={}& (g^{r_1} \cdot g^{r_2}, g^{m_1} h^{r_1} \cdot g^{m_2} h^{r_2}) \\
+={}& (g^{r_1 + r_2}, g^{m_1 + m_2} h^{r_1 + r_2}) \\
+={}& E_{r_1 + r_2}(m_1 + m_2)
+\end{aligned}
+
+In the above, we've shown the randomly generated one-time pritevate keys
+as subscripts on the encryption function $E$. This shows that
+multiplying encrypted messages produces an encrypted message of thet
+sum of the original cleartexts, using a new one-time private key which
+is the some of the individual one-time private keys.
+
+* Schnorr Proofs
+
+When I publish a public key, I may want to convince somebody that I
+actually possess the seret key associated with that public key. One
+way to do this is to show them the secret key, but that kind of
+defeats the point. Instead, we can use a /Zero-Knowledge Proof/ to
+convince them without showing them the private key.
+
+In this case, we use a [[https://en.wikipedia.org/wiki/Proof_of_knowledge#Schnorr_protocol][Schnorr Proof]]. You can think of it as an
+interactionb between a prover (the guy with the private key) and a
+verifier (the guy who wants to know the prover has the private key).
+1. The prover generates a random exponent $0 < r < p - 1$. This is
+   kind of like another one-time private key for the purposes of the
+   proof. The prover commits to that one-time private key by
+   publishing the one-time public key $k = g^r$.
+2. The verifier gives the prover a random challenge $c$ such that $0 <
+   c < p - 1$.
+3. The prover responds to the challenge with $u = r + cs \bmod p - 1$, where $s$
+   is the secret key they're trying to show that they know.
+4. The verifier accepts if $g^u = k \cdot h^c$
+
+This works basically by forcing the prover to synthesize a new private
+key that incorporates $c$, which they do not control. Then the
+verifier can check the corresponding public keys have the correct
+relationship, which implies that the private keys also have that
+relationship without revealing the private keys.
+
+We can convert this from an /interactive/ zero-knowledge proof to a
+non-interactive zero-knowledge proof. Intuitively, all we need from
+them is the challenge $c$ that the prover can't control. We can
+replace them with a hash function like SHA256, and let $c$ be the hash
+of the committment $k$. To make sure that proofs can't be reused
+across elections, we also include information about the specific
+election.[fn:1] The noninteractive version works like this:
+1. The prover generates a random exponent $0 < r < p - 1$.
+   publishing the one-time public key $k = g^r$.
+2. The verifier gives the prover a random challenge $c$ such that $0 <
+   c < p - 1$.
+3. The prover responds to the challenge with $u = r + cs \bmod p - 1$, where $s$
+   is the secret key they're trying to show that they know.
+4. The verifier accepts if $g^u = k \cdot h^c$
+
+** TODO why we want these zero knowledge proofs
+
+* TODO Threshold Encryption
+
+* TODO The Benaloh Challenge
+* Encrypting Ballots
+
+We will encode the selections for a given contest as bit-vectors so
+that homomorphically tallying the encrypted selections produces an
+encrypted tally for each option in the contest.
+
+We also want to be able to check that each ballot is well-formed
+without decrypting it. That means that each selection is a one or a
+zero, and that the number of selected options for each contest is no
+more than the limit $L$ for that contest. To do this, we will once
+again use a non-interactive zero-knowledge proof.
+
+The basis for both of these is a Chaum-Pederson proof, which is used
+to show that a given ElGamal message is actually an encryption of
+zero.
+
+* Chaum-Pederson Proofs
+
+For a Chaum-Pederson Proof, we have some ElGamal encrypted message
+$(a, b) = (g^r, g^m \cdot h^r)$ that is an encryption of a cleartext
+$m$ using some known public key $h$ and a one-time private key $r$. In
+this case though, we want to convince people that $m = 0$, so $(a, b)
+= (g^r, h^r)$.
+
+ We can do this basically by extending the Schnorr protocol to the
+ ciphertext (the second part of the message) as well as the one-time
+ public key, because the Schnorr protocol will only work on the
+ ciphertext if it is zero. That might not make sense right now, but it
+ will when you see it:
+ 1. Like in the Schnorr Proof, the prover will generate a random
+    exponent $t$. They committ to this randomness by publishing not
+    only $g^t$ as they would in a Schnorr proof, but also $h^t$. You
+    can think of this also as an encryption of zero, because were we
+    encrypting zero using $t$ as the one-time private key, we would
+    publish $(g^t, g^0 \cdot h^t)$. So, we publish the pair $(\alpha,
+    \beta) = (g^t, h^t)$.
+ 2. The verifier gives us a random challenge $c$.
+ 3. We response with $u = t + cr$ like we would if this were a Schnorr
+    proof for posession of $r$.
+ 4. The verifier accepts if $g^u = \alpha \cdot a^c$, like they would
+    for a Schnorr proof, but they also check that $h^u = \beta \cdot
+    b^c$.
+
+The reason this works is that the ciphertexts $b$ and $\beta$ only
+compose like this if their cleartexts are both zero. To see it, imagine
+$b = g^{m_1} \cdot h^r$ and $\beta = g^{m_2} \cdot h^t$. Then
+\begin{aligned}
+  h^u &\overset{?}{=} \beta \cdot b^c \\
+  h^{t + cr} &\overset{?}{=} (g^{m_2} \cdot h^t) \cdot (g^{m_1} \cdot h^t)^c \\
+  h^{t + cr} &\overset{?}{=} g^{m_1 + c m_2} \cdot h^{t + cr} \\
+\end{aligned}
+The $m$s get in the way! It only works if both $m$s are zero. That's
+why we encrypt one zero message in the committment, and the other
+message is the message we are trying to show encrypts zero.
+
+** Showing Two Messages are Equal
+
+We can use a Chaum-Pederson proof to show that two messages $(a_1,
+b_1)$ and $(a_2, b_2)$ are encryptions of the same cleartext. This is
+useful, for example, for checking that exactly $L$ options are
+selected in a contest, because we can homomorphically tally all the
+selections, create an encryption of $L$, and prove that they are
+equal.
+
+Suppose
+the first message uses one-time private key $r_1$ and the second
+message uses one-time private key $r_2$, and both of them encrypt the
+cleartext $m$ using public key $h$. So,
+\[
+(a_1, b_1) = (g^{r_1}, g^m \cdot h^{r_1}) \qquad (a_2, b_2) = (g^{r_2}, g^m \cdot h^{r_2})
+\]
+Dividing the messages homomorphically subtracts the messages:
+\begin{aligned}
+\frac{(a_1, b_1)}{(a_2, b_2)} &= 
+\frac{(g^{r_1}, g^m \cdot h^{r_1})}{(g^{r_2}, g^m \cdot h^{r_2})} \\
+&= (g^{r_1 - r_2}, g^{m-m} \cdot c^{r_1 - r_2}) \\
+&= (g^{r_1 - r_2}, c^{r_1 - r_2})
+\end{aligned}
+Now we can produce a Chaum-Pederson proof that the resulting message
+is encodes zero. 
+
+So all together, given a public key $h$, and two messages $(a_1, b_1)$
+and $(a_2, b_2)$, we produce a proof that they are encryptions of a
+same cleartext as follows:
+1. Choose a random exponent $t$ as the one-use private key. Publish
+   $(\alpha, \beta) = (g^t, h^t)$.
+2. Get a random challenge $c$ (from a verifier or a hash function).
+3. Respond with $u = t + cr$.
+4. Verifier accepts if $g^u = \alpha \cdot \left(\frac{a_1}{a_2}\right)^c$
+   and if $h^u = \beta \cdot \left(\frac{b_2}{b_1}\right)^c$.
+
+   As an optimization, the verifier can avoid modular division by
+   multiplying through the denominator, and check instead $a_2^c \cdot
+   g^u = \alpha \cdot a_1^c$ and $b_2^c \cdot h^u = \beta \cdot
+   b_2^c$.
+
+
+** Disjunctions
+
+We want to show that each selection is an encryption of a one /or/ and
+encryption of a zero. The trick that we'll use is we'll start with an
+actual proof that the selection is a one or a zero, depending on its
+value. Then we'll fake a proof that it's the value that it's not in a
+way that a verifier can't figure out which one is fake.
+
+In general, we're going to assume that we have an ElGamal message $(a,
+b)$, a real cleartext $m_{\text{real}}$ and a fake cleartext
+$m_{\text{fake}}$. We want to create a proof that either the message
+is an encryption of $m_{\text{real}}$ or $m_{\text{fake}}$ without
+revealing which is which.
+
+We need to have an encrypted ElGamal message for $m_{\text{real}}$ and
+$m_{\text{fake}}$ in order to create a Chaum-Pederson proof, but the
+verifier already knows the values of both. So we can make our lives a
+lot easier and use $r = 0$ as the one-time private key for encrypting
+both, which is a poor choice if we cared about keeping them secret,
+but we don't so it's fine. That means we let
+\[
+(a_{\text{real}}, b_{\text{real}}) = (g^r, g^{m_{\text{real}}} \cdot
+h^r) = (1, g^{m_{\text{real}}})
+\]
+\[
+(a_{\text{fake}}, b_{\text{fake}}) = (g^r, g^{m_{\text{fake}}} \cdot
+h^r) = (1, g^{m_{\text{fake}}})
+\]
+
+The basic idea is that if we fix a fake challenge
+$c_{\text{fake}}$ and fake response $u_{\text{fake}}$ in advance, then
+we can construct a fake committment $(\alpha_{\text{fake}},
+\beta_{\text{fake}})$ to satisfy the equations:
+\begin{aligned}
+g^{u_{\text{fake}}} = \alpha_{\text{fake}} \cdot
+\left(\frac{a}{a_{\text{fake}}}\right)^{c_{\text{fake}}}
+&\implies
+\alpha_{\text{fake}} 
+= g^{u_{\text{fake}}} \cdot \left(\frac{a_{\text{fake}}}{a}\right)^{c_{\text{fake}}}
+= \frac{g^{u_{\text{fake}}}}{a^{c_{\text{fake}}}}
+\\
+h^{u_{\text{fake}}} = \beta_{\text{fake}} \cdot
+\left(\frac{b}{b_{\text{fake}}}\right)^{c_{\text{fake}}}
+&\implies
+\beta_{\text{fake}} 
+= h^{u_{\text{fake}}} \cdot \left(\frac{b_{\text{fake}}}{b}\right)^{c_{\text{fake}}}
+= h^{u_{\text{fake}}} \cdot \left(\frac{g^{m_{\text{fake}}}}{b}\right)^{c_{\text{fake}}}
+\end{aligned}
+
+1. Choose a random exponent $t$ and publish
+   $(\alpha_{\text{real}}, \beta_{\text{real}}) = (g^t, h^t)$.
+2. Choose a random challenge $c_{\text{fake}}$ and response
+   $u_{\text{fake}}$. Publish 
+   $(\alpha_{\text{fake}}, \beta_{\text{fake}}) = 
+    \left(
+      \frac{g^{u_{\text{fake}}}}{a^{c_{\text{fake}}}},
+      h^{u_{\text{fake}}} \cdot \left(\frac{g^{m_{\text{fake}}}}{b}\right)^{c_{\text{fake}}}
+    \right)$.
+3. Generate a challenge $c$ by hashing relevant parameters in addition
+   to $a$, $b$, $\alpha_{\text{real}}$, $\beta_{\text{real}}$,
+   $\alpha_{\text{fake}}$, and $\beta_{\text{fake}}$.
+4. Get the challenge for the real proof $c_{\text{real}} = c -
+   c_{\text{fake}} \bmod p - 1$.
+5. Complete the real proof as usual, by publishing $u_{\text{real}} =
+   t + c_{\text{real}} r$, where $r$ is the one-use private key used
+   to encode the message $(a, b)$.
+6. The verifier can check both the proofs as usual. In addition
+   they can calculate $c = c_{\text{real}} + c_{\text{fake}}$ and
+   check that it was calculated honestly using the hash function.
+
+** Decryptions
+
+We can also use Chaum-Pederson proofs to show that the process of
+decryption has been carried out correctly.
+
+When we tally up all the votes, we end up with an ElGamal message $(A,
+B)$, where $A$ is $g^{\sum r_i}$ where $r_i$ are all the one-time
+secret keys used for every selection. So $A$ is the combination of all
+the one-time public keys. We also have $K = \prod h_i = g^{\sum s_i}$, the joint
+public key. To decrypt $(A, B)$, we need to get the shared secret
+$g^{\sum r_i + \sum s_i}$. Each trustee can stick on their secret key.
+
+
+* Decrypting Tallies and Spoiled Ballots
+* Checking the Election
+
+* Footnotes
+
+[fn:1] Google "Swiss post voting attack" or ask Joey
