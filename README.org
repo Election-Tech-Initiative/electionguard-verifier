@@ -2,26 +2,53 @@
 
 * TODO
 
-- [X] Check proofs of public key posession
-- [ ] Check proofs of selection being 0/1
-- [ ] Check proofs of correct numbers of selections
-- [ ] Check proofs of decryption for spoiled ballots (fragments and shares)
-- [ ] Check proofs of decryption for tallies (fragments and shares) 
+Some of these items are strictly necessary and some are actually a
+good idea but are complicated. It's important to remember that this is
+supposed to serve as a /reference/ implementation, so we should
+probably make every effort to make the code readable and simple, even
+to users unfamiliar with Rust. However, there's no reason not to have
+a second version with all of the constant-time memory dependent-time
+goodness that we want.
+
+- [X] Check proofs of public key posession (Schnorr proofs).
+- [X] Check proofs of selection being 0/1.
+- [ ] Check proofs of correct numbers of selections in each contest.
+- [ ] Check proofs of decryption for spoiled ballots (fragments and shares).
+- [ ] Check proofs of decryption for tallies (fragments and shares).
 - [ ] Add optimized method for checking CP proofs where the message is
-  the quotient of two messages; we can avoid a division
+  the quotient of two messages; we can avoid a division.
 - [ ] Generalize hash interface to not use BigUint. Maybe use bytes,
   or be more general to handle whole messages and automatically
   convert to bytes.
 - [ ] Investigate if we want to reuse input struct for error shape by
-  paremetrizing over annotations
+  paremetrizing over annotations.
 - [ ] Think about never ever using vecs of vecs, but always making an
-  intermediate struct. It feels like everything is easier that way
-- [ ] Use the num type to avoid explicit mod
-- [ ] Add option to link against [[https://github.com/verificatum/verificatum-gmpmee][GIMP Verificatum]]
-- [ ] Generate types more automatically from [[https://quicktype.io][quicktype]], see also [fn:1]
+  intermediate struct. It feels like everything is easier that way.
+- [ ] Newtype all the BigUints.
+- [ ] Implement the numeric traits on the newtyped BigUints to
+  automatically do the modular arithmetic. This is a little hard to do
+  from a parsing perspective, because that means we need to parse the
+  bit with the prime in it and then use that to parse the rest. Or add
+  another pass and parametrize over the type of the numbers.
+- [ ] Put the modulus in the type of the modular numbers. This is
+  useful because exponents and regular numbers live in different
+  groups ($p$ vs. $p-1$), so this way you can't screw it up.
+- [ ] Add option to link against [[https://github.com/verificatum/verificatum-gmpmee][GIMP Verificatum]]. You'll just have a
+  different modules that expose the same interface for modular
+  arithmetic, and you can set which one to compile with a cargo
+  feature flag.
+- [ ] Generate types more automatically from the schema using
+  [[https://quicktype.io][quicktype]], see also [fn:1]. To be honest this is probably not worth
+  it because the schema shouldn't change SO often. But it would be
+  cool.
 - [ ] Look into lazy trees or something (nested iterators?) to avoid
   unnecessary allocation for errors/statuses when all we want to do is
-  print them out one by one
+  print them out one by one. This isn't such a big deal because the
+  memory usage of the errors is proportional to the number of errors,
+  which in the real world should be low.
+- [ ] Don't even parse the whole thing into memory, but rather stream
+  the bits you want as you need them. So first you stream all the keys
+  and check them, then the votes, etc.
 
 * Footnotes
 
