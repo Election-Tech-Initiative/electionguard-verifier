@@ -7,9 +7,9 @@
 #+INFOJS_OPT: view:showall toc:t ltoc:t mouse:underline path:http://orgmode.org/org-info.js
 #+STARTUP: latexpreview
 
-This is based on Josh's document, Wikipedia articles, and a [[http://wwwmayr.in.tum.de/konferenzen/Jass05/courses/1/papers/meier_paper.pdf][few]] [[https://groups.csail.mit.edu/cis/crypto/classes/6.857/papers/elgamal.pdf][other]] [[www.cs.virginia.edu/dwu4/notes/CS355LectureNotes.pdf
- ][articles]].
- 
+This is based on Josh's document, Wikipedia articles, and [[http://www.tcs.hut.fi/Studies/T-79.159/2004/slides/L9.pdf][a]] [[http://wwwmayr.in.tum.de/konferenzen/Jass05/courses/1/papers/meier_paper.pdf][few]] [[https://groups.csail.mit.edu/cis/crypto/classes/6.857/papers/elgamal.pdf][other]]
+[[www.cs.virginia.edu/dwu4/notes/CS355LectureNotes.pdf][articles]].
+
 I've tried to structure this document so that in can be read all the
 way through like a story. You can also skip to the last section which
 says everything you need to check for an election, and it should
@@ -262,13 +262,13 @@ cleartext $m$ using public key $h$. So,
 \]
 Dividing the messages homomorphically subtracts the messages:
 \begin{aligned}
-\frac{(a_1, b_1)}{(a_2, b_2)} &= 
+\frac{(a_1, b_1)}{(a_2, b_2)} &=
 \frac{(g^{r_1}, g^m \cdot h^{r_1})}{(g^{r_2}, g^m \cdot h^{r_2})} \\
 &= (g^{r_1 - r_2}, g^{m-m} \cdot c^{r_1 - r_2}) \\
 &= (g^{r_1 - r_2}, c^{r_1 - r_2})
 \end{aligned}
 Now we can produce a Chaum-Pederson proof that the resulting message
-is encodes zero. 
+is encodes zero.
 
 So all together, given a public key $h$, and two messages $(a_1, b_1)$
 and $(a_2, b_2)$, we produce a proof that they are encryptions of a
@@ -323,14 +323,14 @@ we can construct a fake committment $(\alpha_{\text{fake}},
 g^{u_{\text{fake}}} = \alpha_{\text{fake}} \cdot
 \left(\frac{a}{a_{\text{fake}}}\right)^{c_{\text{fake}}}
 &\implies
-\alpha_{\text{fake}} 
+\alpha_{\text{fake}}
 = g^{u_{\text{fake}}} \cdot \left(\frac{a_{\text{fake}}}{a}\right)^{c_{\text{fake}}}
 = \frac{g^{u_{\text{fake}}}}{a^{c_{\text{fake}}}}
 \\
 h^{u_{\text{fake}}} = \beta_{\text{fake}} \cdot
 \left(\frac{b}{b_{\text{fake}}}\right)^{c_{\text{fake}}}
 &\implies
-\beta_{\text{fake}} 
+\beta_{\text{fake}}
 = h^{u_{\text{fake}}} \cdot \left(\frac{b_{\text{fake}}}{b}\right)^{c_{\text{fake}}}
 = h^{u_{\text{fake}}} \cdot \left(\frac{g^{m_{\text{fake}}}}{b}\right)^{c_{\text{fake}}}
 \end{aligned}
@@ -338,8 +338,8 @@ h^{u_{\text{fake}}} = \beta_{\text{fake}} \cdot
 1. Choose a random exponent $t$ and publish
    $(\alpha_{\text{real}}, \beta_{\text{real}}) = (g^t, h^t)$.
 2. Choose a random challenge $c_{\text{fake}}$ and response
-   $u_{\text{fake}}$. Publish 
-   $(\alpha_{\text{fake}}, \beta_{\text{fake}}) = 
+   $u_{\text{fake}}$. Publish
+   $(\alpha_{\text{fake}}, \beta_{\text{fake}}) =
     \left(
       \frac{g^{u_{\text{fake}}}}{a^{c_{\text{fake}}}},
       h^{u_{\text{fake}}} \cdot \left(\frac{g^{m_{\text{fake}}}}{b}\right)^{c_{\text{fake}}}
@@ -364,10 +364,38 @@ decryption has been carried out correctly.
 When we tally up all the votes, we end up with an ElGamal message $(A,
 B)$, where $A$ is $g^{\sum r_i}$ where $r_i$ are all the one-time
 secret keys used for every selection. So $A$ is the combination of all
-the one-time public keys. We also have $K = \prod h_i = g^{\sum s_i}$, the joint
-public key. To decrypt $(A, B)$, we need to get the shared secret
-$g^{\sum r_i + \sum s_i}$. Each trustee can stick on their secret key.
+the one-time public keys. We also have $K = \prod h_i = g^{\sum s_i}$,
+the joint public key. To decrypt $(A, B)$, we need to get the shared
+secret $g^{\left(\sum r_i \right) \left(\sum s_i\right)$. Each trustee
+can stick on their secret key $s_i$ to $A = g^{\sum r_i}$ to produce
+$M_i = A^{s_i} = g^{\left(\sum r_i \right)s_i}$, and then the \(M\)s can
+be multiplied to form the shared secret.
 
+We would like to verify that the \(M_i\)s have been computed correctly
+without revealing the \(s_i\)s. If we squint, $M_i = A^{s_i}$ is an
+encryption of zero where $s_i$ is being used as the one-time private
+key and $A$ is being used as the public key. In a way, this makes a
+lot of sense: we are decrypting rather than encrypting, so we are
+using the one-time public key $A$, or rather an amalgamation thereof.
+And we're using the permanent private key rather than a one-time
+private key. So everything is just backwards.
+
+Luckily, as long as we're consistent about flipping everything, we can
+still use our Chaum-Pederson proofs to prove that $M_i = A^{s_i}$ is
+correcty by showing that $(h_i, M_i)$ is an encryption of zero. We use
+$h_i$ as the one-time public key because it's the permanent public key
+and we're living in Bizarro decryption world.
+
+So our procedure is pretty much a usual Chaum-Pederson proof, where
+the message $(a, b) = (h_i, M_i)$ and the public key is $A$:
+1. Generate a random exponent $t$, and commit to it by publishing
+   $(\alpha, \beta) = (g^t, A^t)$. Remember, $A$ is playing the role of permanent public
+   key even though it's actually a big one-time public key.
+2. Get a random challenge $c$.
+3. Respond with $u = t + c s_i$.
+4. The verifier accepts if (just like usual) if $g^u = \alpha \cdot
+   a^c = \alpha \cdot h_i^c$ and $A_u = \beta \cdot b^c = \beta \cdot
+   M_i^c$, and also the hash checks out.
 
 * Decrypting Tallies and Spoiled Ballots
 * Checking the Election
