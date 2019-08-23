@@ -9,6 +9,9 @@ use crate::crypto::elgamal::Group;
 /// a proof that exactly `L` of them have been selected.
 #[derive(Serialize, Deserialize)]
 pub struct Contest {
+    /// The encrypted selections made on the ballot.
+    selections: Vec<Selection>,
+
     /// The maximum number of selections `L` that can be made in this
     /// contest.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
@@ -17,9 +20,6 @@ pub struct Contest {
     /// A proof that the sum of the selections is equal to `L`, by
     /// proving that their difference is zero.
     num_selections_proof: chaum_pederson::Proof,
-
-    /// The encrypted selections made on the ballot.
-    selections: Vec<Selection>,
 }
 
 #[derive(Debug, Serialize)]
