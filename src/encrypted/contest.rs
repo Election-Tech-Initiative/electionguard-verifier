@@ -11,22 +11,22 @@ use crate::crypto::hash;
 #[derive(Serialize, Deserialize)]
 pub struct Contest {
     /// The encrypted selections made on the ballot.
-    selections: Vec<Selection>,
+    pub selections: Vec<Selection>,
 
     /// The maximum number of selections `L` that can be made in this
     /// contest.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
-    max_selections: BigUint,
+    pub max_selections: BigUint,
 
     /// A proof that the sum of the selections is equal to `L`, by
     /// proving that their difference is zero.
-    num_selections_proof: chaum_pederson::Proof,
+    pub num_selections_proof: chaum_pederson::Proof,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Status {
-    selections: Vec<selection::Status>,
-    num_selections: chaum_pederson::Status,
+    pub selections: Vec<selection::Status>,
+    pub num_selections: chaum_pederson::Status,
 }
 
 fn inverse(a: &BigUint, p: &BigUint) -> BigUint {

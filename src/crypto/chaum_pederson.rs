@@ -47,14 +47,14 @@ pub struct Proof {
 
 #[derive(Debug, Serialize)]
 pub struct ResponseStatus {
-    public_key: bool,
-    ciphertext: bool,
+    pub public_key: bool,
+    pub ciphertext: bool,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Status {
-    challenge: bool,
-    response: ResponseStatus,
+    pub challenge: bool,
+    pub response: ResponseStatus,
 }
 
 #[derive(Debug, Copy, Clone)]

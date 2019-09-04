@@ -6,3 +6,5 @@ pub mod election;
 pub mod encrypted;
 pub mod mod_arith;
 pub mod trustee;
+
+#[cfg(test)] mod test;
