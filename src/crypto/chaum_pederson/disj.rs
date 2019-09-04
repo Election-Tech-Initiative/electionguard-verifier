@@ -8,9 +8,9 @@ use crate::crypto::hash::Spec;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
     #[serde(rename = "zero_proof")]
-    left: super::Proof,
+    pub left: super::Proof,
     #[serde(rename = "one_proof")]
-    right: super::Proof,
+    pub right: super::Proof,
 }
 
 #[derive(Debug, Serialize)]

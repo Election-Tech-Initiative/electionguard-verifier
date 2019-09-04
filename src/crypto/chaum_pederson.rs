@@ -1,7 +1,9 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
 
 use super::elgamal::{Group, Message};
+use crate::crypto::hash::Spec;
 
 pub mod disj;
 
@@ -27,20 +29,20 @@ pub struct Proof {
     /// encode zero, as in the equation `hᵘ = hᵗ⁺ᶜʳ = hᵗ (hʳ)ᶜ = β
     /// bᶜ`. This acts as a committment to the one-time private key
     /// `t` used in this proof.
-    committment: Message,
+    pub committment: Message,
 
     /// The challenge value `c` that is produced by hashing relevent
     /// parameters, including the original ElGamal message `(a,b)` and
     /// the zero message `(c, d)`.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
-    challenge: BigUint,
+    pub challenge: BigUint,
 
     /// The response `u = t + c r mod (p-1)` to the challenge `c`,
     /// where `r` is the one-time private key used to encrypt the
     /// original message and `t` is the one-time private key used to
     /// encrypt the zero message used in this proof.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
-    response: BigUint,
+    pub response: BigUint,
 }
 
 #[derive(Debug, Serialize)]
@@ -62,6 +64,25 @@ pub enum HashInput {
 }
 
 impl Proof {
+    pub fn check(
+        &self,
+        group: &Group,
+        message: &Message,
+        public_key: &BigUint,
+        spec: Spec<HashInput>,
+    ) -> Status {
+        Status {
+            challenge: self.is_challenge_ok(group, spec),
+            response: self.check_response(group, message, public_key),
+        }
+    }
+
+    fn is_challenge_ok(&self, group: &Group, spec: Spec<HashInput>) -> bool {
+        let Group { prime: p, .. } = group;
+        let expected = spec.exec::<_, Sha256>(|x| self.resolver()(x));
+        expected == self.challenge
+    }
+
     fn check_response(
         &self,
         group: &Group,
@@ -116,7 +137,7 @@ impl Proof {
         message: &Message,
         public_key: &BigUint,
     ) -> bool {
-        let Group { prime: p, .. } = group;
+        let Group { prime: p, generator: g } = group;
         let Proof {
             committment: Message {
                 ciphertext: beta, ..
@@ -127,7 +148,9 @@ impl Proof {
         let Message { ciphertext: b, .. } = message;
         let h = public_key;
 
-        BigUint::modpow(h, u, p) == (beta * BigUint::modpow(b, c, p)) % p
+        //BigUint::modpow(h, u, p) == (beta * BigUint::modpow(b, c, p)) % p
+        (BigUint::modpow(h, u, p) * BigUint::modpow(g, c, p)) % p
+            == (beta * BigUint::modpow(b, c, p)) % p
     }
 
     fn resolver<'a>(&'a self) -> impl Fn(HashInput) -> &'a BigUint {
@@ -137,6 +160,12 @@ impl Proof {
             CommittmentPublicKey => &self.committment.public_key,
             CommittmentCiphertext => &self.committment.ciphertext,
         }
+    }
+}
+
+impl Status {
+    pub fn is_ok(&self) -> bool {
+        self.challenge && self.response.is_ok()
     }
 }
 

@@ -23,6 +23,7 @@ impl<'a, P: 'a + Copy> Spec<'a, P> {
         R: 'a + Fn(P) -> &'a BigUint,
         D: Digest,
     {
+        // TODO: pretty sure there should be some padding / length between elements?
         let hash = self
             .resolve(resolver)
             .map(BigUint::to_bytes_be)
