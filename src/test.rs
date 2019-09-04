@@ -179,9 +179,70 @@ impl chaum_pederson::Proof {
             response: u,
         }
     }
+
+    /// Construct a proof that `message1` and `message2` are encryptions of the same value.
+    pub fn prove_equal(
+        group: &Group,
+        public_key: &BigUint,
+        message1: &Message,
+        one_time_secret1: &BigUint,
+        message2: &Message,
+        one_time_secret2: &BigUint,
+        one_time_exponent: &BigUint,
+        gen_challenge: impl FnOnce(&Message) -> BigUint,
+    ) -> chaum_pederson::Proof {
+        let p = &group.prime;
+
+        // Check that the decryptions of `message1` and `message2` are equal by proving that their
+        // difference is zero.
+        let combined_message = message1.h_sub(message2, group);
+
+        // Combining messages also combines their one-time secret keys in the same way.
+        let neg_one_time_secret2 = (p - 1_u8) - one_time_secret2;
+        let combined_one_time_secret = (one_time_secret1 + neg_one_time_secret2) % &(p - 1_u8);
+
+        Self::prove_zero(
+            group,
+            public_key,
+            &combined_message,
+            &combined_one_time_secret,
+            one_time_exponent,
+            gen_challenge,
+        )
+    }
+
+    /// Construct a proof that `message` is an encryption of `plaintext`.
+    pub fn prove_plaintext(
+        group: &Group,
+        public_key: &BigUint,
+        message: &Message,
+        one_time_secret: &BigUint,
+        plaintext: &BigUint,
+        one_time_exponent: &BigUint,
+        gen_challenge: impl FnOnce(&Message) -> BigUint,
+    ) -> chaum_pederson::Proof {
+        let plaintext_one_time_secret = 0_u8.into();
+        let encrypted_plaintext = Message::encrypt(
+            group,
+            public_key,
+            plaintext,
+            &plaintext_one_time_secret,
+        );
+        Self::prove_equal(
+            group,
+            public_key,
+            message,
+            one_time_secret,
+            &encrypted_plaintext,
+            &plaintext_one_time_secret,
+            one_time_exponent,
+            gen_challenge,
+        )
+    }
 }
 
 
+/// Encrypt a zero, construct a Chaum-Pederson proof that it's zero, and check the proof.
 #[test]
 fn prove_check_zero() {
     let group = elgamal::test::group();
@@ -201,6 +262,235 @@ fn prove_check_zero() {
     );
 
     let status = proof.check_zero(&group, &public_key, &message);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt a nonzero value, construct a Chaum-Pederson proof claiming it's zero, and check the
+/// proof (which should fail).
+#[test]
+#[should_panic]
+fn prove_check_zero_fail() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let one_time_secret = 2140_u32.into();
+    let message = Message::encrypt(&group, &public_key, &1_u8.into(), &one_time_secret);
+    let one_time_exponent = 3048_u32.into();
+    let proof = chaum_pederson::Proof::prove_zero(
+        &group,
+        &public_key,
+        &message,
+        &one_time_secret,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_zero(&group, &public_key, &message);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// This is `prove_check_zero`, but using the largest possible nonce for the message encryption.
+/// This lets us check that we have the right modulus (p vs. p - 1) in certain places.
+#[test]
+fn prove_check_zero_extreme_nonce() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let one_time_secret = &group.prime - 2_u8;
+    let message = Message::encrypt(&group, &public_key, &0_u8.into(), &one_time_secret);
+    let one_time_exponent = 3048_u32.into();
+    let proof = chaum_pederson::Proof::prove_zero(
+        &group,
+        &public_key,
+        &message,
+        &one_time_secret,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_zero(&group, &public_key, &message);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt the same value twice, construct a Chaum-Pederson proof that they're equal, and check
+/// the proof.
+#[test]
+fn prove_check_equal() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 30712_u32.into();
+    let one_time_secret1 = 20147_u32.into();
+    let message1 = Message::encrypt(&group, &public_key, &value, &one_time_secret1);
+    let one_time_secret2 = 7494_u32.into();
+    let message2 = Message::encrypt(&group, &public_key, &value, &one_time_secret2);
+    let one_time_exponent = 9195_u32.into();
+
+    let proof = chaum_pederson::Proof::prove_equal(
+        &group,
+        &public_key,
+        &message1,
+        &one_time_secret1,
+        &message2,
+        &one_time_secret2,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_equal(&group, &public_key, &message1, &message2);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt two different values, construct a Chaum-Pederson proof that claims they're equal, and
+/// check the proof (which should fail).
+#[test]
+#[should_panic]
+fn prove_check_equal_fail() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value1 = 30712_u32.into();
+    let one_time_secret1 = 20147_u32.into();
+    let message1 = Message::encrypt(&group, &public_key, &value1, &one_time_secret1);
+    let value2 = 2471_u32.into();
+    let one_time_secret2 = 7494_u32.into();
+    let message2 = Message::encrypt(&group, &public_key, &value2, &one_time_secret2);
+    let one_time_exponent = 9195_u32.into();
+
+    let proof = chaum_pederson::Proof::prove_equal(
+        &group,
+        &public_key,
+        &message1,
+        &one_time_secret1,
+        &message2,
+        &one_time_secret2,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_equal(&group, &public_key, &message1, &message2);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// This is `prove_check_equal`, but using the largest possible nonce for one of the encryptions.
+/// This lets us check that we have the right modulus (p vs. p - 1) in certain places.
+#[test]
+fn prove_check_equal_extreme_nonce() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 30712_u32.into();
+    let one_time_secret1 = 7494_u32.into();
+    let message1 = Message::encrypt(&group, &public_key, &value, &one_time_secret1);
+    let one_time_secret2 = &group.prime - 2_u8;
+    let message2 = Message::encrypt(&group, &public_key, &value, &one_time_secret2);
+    let one_time_exponent = 9195_u32.into();
+
+    let proof = chaum_pederson::Proof::prove_equal(
+        &group,
+        &public_key,
+        &message1,
+        &one_time_secret1,
+        &message2,
+        &one_time_secret2,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_equal(&group, &public_key, &message1, &message2);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+
+/// Encrypt a value, construct a Chaum-Pederson proof that it's that value, and check the proof.
+#[test]
+fn prove_check_plaintext() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 11935_u32.into();
+    let one_time_secret = 13797_u32.into();
+    let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+    let one_time_exponent = 30612_u32.into();
+    let proof = chaum_pederson::Proof::prove_plaintext(
+        &group,
+        &public_key,
+        &message,
+        &one_time_secret,
+        &value,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_plaintext(&group, &public_key, &message, &value);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt a value, construct a Chaum-Pederson proof claiming it's a different value, and check
+/// the proof (which should fail).
+#[test]
+#[should_panic]
+fn prove_check_plaintext_fail() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 11935_u32.into();
+    let other_value = 1609_u32.into();
+    let one_time_secret = 13797_u32.into();
+    let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+    let one_time_exponent = 30612_u32.into();
+    let proof = chaum_pederson::Proof::prove_plaintext(
+        &group,
+        &public_key,
+        &message,
+        &one_time_secret,
+        &other_value,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_plaintext(&group, &public_key, &message, &other_value);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// This is `prove_check_plaintext`, but using the largest possible nonce for the message
+/// encryption.  This lets us check that we have the right modulus (p vs. p - 1) in certain places.
+#[test]
+fn prove_check_plaintext_extreme_nonce() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 11935_u32.into();
+    let one_time_secret = &group.prime - 2_u8;
+    let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+    let one_time_exponent = 30612_u32.into();
+    let proof = chaum_pederson::Proof::prove_plaintext(
+        &group,
+        &public_key,
+        &message,
+        &one_time_secret,
+        &value,
+        &one_time_exponent,
+        |msg| hash_uints(&[&extended_base_hash, &msg.public_key, &msg.ciphertext]),
+    );
+
+    let status = proof.check_plaintext(&group, &public_key, &message, &value);
     dbg!(&status);
     assert!(status.is_ok());
 }

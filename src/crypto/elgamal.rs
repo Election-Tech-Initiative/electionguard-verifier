@@ -41,6 +41,7 @@ pub mod test {
     use super::*;
 
     pub fn group() -> Group {
+        /*
         let mut p_bytes = Vec::new();
         let p_hex = b"
             FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 29024E08 8A67CC74
@@ -68,10 +69,13 @@ pub mod test {
                 p_bytes.push(b - b'A' + 10);
             }
         }
+        */
 
+        // Use a small prime for tests so they run quickly.  As long as all the one-time secrets
+        // used in tests are less than 100000 (and thus less than p - 1), everything should work.
         Group {
-            generator: 2_u32.into(),
-            prime: BigUint::from_radix_be(&p_bytes, 16).unwrap(),
+            generator: 5_u32.into(),
+            prime: 100103_u32.into(),
         }
     }
 
