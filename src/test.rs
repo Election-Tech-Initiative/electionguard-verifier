@@ -1,4 +1,5 @@
 use num::BigUint;
+use num::traits::identities::{Zero, One};
 use sha2::Sha256;
 use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal::{self, Group, Message};
@@ -38,6 +39,16 @@ impl Message {
             public_key: k,
             ciphertext: g.modpow(m, p) * h.modpow(r, p) % p,
         }
+    }
+
+    /// Encrypt the number zero using `public_key` and a `one_time_secret` key.
+    pub fn zero(group: &Group, public_key: &BigUint, one_time_secret: &BigUint) -> Message {
+        Message::encrypt(group, public_key, &BigUint::zero(), one_time_secret)
+    }
+
+    /// Encrypt the number one using `public_key` and a `one_time_secret` key.
+    pub fn one(group: &Group, public_key: &BigUint, one_time_secret: &BigUint) -> Message {
+        Message::encrypt(group, public_key, &BigUint::one(), one_time_secret)
     }
 
     /// Homomorphic addition of encrypted messages.  Converts the encryptions of `a` and `b` into
@@ -193,6 +204,3 @@ fn prove_check_zero() {
     dbg!(&status);
     assert!(status.is_ok());
 }
-
-
-
