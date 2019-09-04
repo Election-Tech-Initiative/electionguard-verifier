@@ -5,6 +5,7 @@ pub mod deserialize;
 pub mod election;
 pub mod encrypted;
 pub mod mod_arith;
+pub mod mod_arith2;
 pub mod trustee;
 
-#[cfg(test)] mod test;
+//#[cfg(test)] mod test;

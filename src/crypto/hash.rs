@@ -1,5 +1,7 @@
 use digest::Digest;
 use num::BigUint;
+use sha2::Sha256;
+use crate::crypto::elgamal;
 
 /// Specifies how the challenge should be computed by specifying which
 /// inputs should be hashed, and in what order.
@@ -42,4 +44,42 @@ impl<'a, P: 'a + Copy> Spec<'a, P> {
             Input::Proof(x) => resolver(x),
         })
     }
+}
+
+pub fn hash_uints(xs: &[&BigUint]) -> BigUint {
+    let inputs = xs.iter().map(|i| Input::External(i)).collect::<Vec<_>>();
+    Spec::<()>(&inputs).exec::<_, Sha256>(|_| unreachable!())
+}
+
+/// Hash together a BigUint, a message, and a commitment.
+pub fn hash_umc(
+    u: &BigUint,
+    m: &elgamal::Message,
+    c: &elgamal::Message,
+) -> BigUint {
+    hash_uints(&[
+        u,
+        &m.public_key,
+        &m.ciphertext,
+        &c.public_key,
+        &c.ciphertext,
+    ])
+}
+
+/// Hash together a BigUint, a message, and two commitments.
+pub fn hash_umcc(
+    u: &BigUint,
+    m: &elgamal::Message,
+    c1: &elgamal::Message,
+    c2: &elgamal::Message,
+) -> BigUint {
+    hash_uints(&[
+        u,
+        &m.public_key,
+        &m.ciphertext,
+        &c1.public_key,
+        &c1.ciphertext,
+        &c2.public_key,
+        &c2.ciphertext,
+    ])
 }

@@ -1,5 +1,7 @@
 use num::BigUint;
+use num::traits::identities::{Zero, One};
 use serde::{Deserialize, Serialize};
+use crate::mod_arith2::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Group {
@@ -32,6 +34,69 @@ pub struct Message {
     /// is the recipient public key being used for encryption.
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     pub ciphertext: BigUint,
+}
+
+impl Message {
+    /// Encrypt `m` using `public_key` and a `one_time_secret` key.
+    pub fn encrypt(
+        group: &Group,
+        public_key: &BigUint,
+        m: &BigUint,
+        one_time_secret: &BigUint,
+    ) -> Message {
+        let g = &group.generator;
+        let p = &group.prime;
+        let h = public_key;
+        let r = one_time_secret;
+
+        // Let k = g^r. You can think of this as your one-time public key.
+        let k = g.modpow(r, p);
+
+        // Normal Elgamal encryption: "Publish (k, m ⋅ h^r). I'll refer to the first element of the
+        // pair as the one-time public key, the second element as the ciphertext, and the whole
+        // pair as the encrypted message."
+        // But we are instead using exponential Elgamal, which replaces `m` with `g^m`: "we make
+        // one small tweak: instead of forming the ciphertext as m ⋅ g^(rs) where g^(rs) is that
+        // shared secret, we use g^m ⋅ g^(rs)."
+        Message {
+            public_key: k,
+            ciphertext: g.modpow(m, p) * h.modpow(r, p) % p,
+        }
+    }
+
+    /// Encrypt the number zero using `public_key` and a `one_time_secret` key.
+    pub fn zero(group: &Group, public_key: &BigUint, one_time_secret: &BigUint) -> Message {
+        Message::encrypt(group, public_key, &BigUint::zero(), one_time_secret)
+    }
+
+    /// Encrypt the number one using `public_key` and a `one_time_secret` key.
+    pub fn one(group: &Group, public_key: &BigUint, one_time_secret: &BigUint) -> Message {
+        Message::encrypt(group, public_key, &BigUint::one(), one_time_secret)
+    }
+
+    /// Homomorphic addition of encrypted messages.  Converts the encryptions of `a` and `b` into
+    /// the encryption of `a + b`.
+    pub fn h_add(&self, other: &Message, group: &Group) -> Message {
+        Message {
+            public_key: &self.public_key * &other.public_key % &group.prime,
+            ciphertext: &self.ciphertext * &other.ciphertext % &group.prime,
+        }
+    }
+
+    /// Homomorphic negation of encrypted messages.  Converts the encryption of `a` into the
+    /// encryption of `-a`.
+    pub fn h_neg(&self, group: &Group) -> Message {
+        Message {
+            public_key: mod_inv(&self.public_key, &group.prime),
+            ciphertext: mod_inv(&self.ciphertext, &group.prime),
+        }
+    }
+
+    /// Homomorphic subtraction of encrypted messages.  Converts the encryptions of `a` and `b`
+    /// into the encryption of `a - b`.
+    pub fn h_sub(&self, other: &Message, group: &Group) -> Message {
+        self.h_add(&other.h_neg(group), group)
+    }
 }
 
 
