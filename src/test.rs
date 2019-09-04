@@ -5,7 +5,17 @@ use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal::{self, Group, Message};
 use crate::crypto::hash;
 
-/// Inversion (reciprocal) in the group with prime modulus `p`.
+/// Negation in the group with modulus `p`.
+pub fn mod_neg(a: &BigUint, p: &BigUint) -> BigUint {
+    (p - a % p) % p
+}
+
+/// Subtraction in the group with modulus `p`.
+pub fn mod_sub(a: &BigUint, b: &BigUint, p: &BigUint) -> BigUint {
+    (a % p + p - b % p) % p
+}
+
+/// Multiplicative inversion (reciprocal) in the group with prime modulus `p`.
 pub fn mod_inv(a: &BigUint, p: &BigUint) -> BigUint {
     // https://en.wikipedia.org/wiki/Modular_multiplicative_inverse#Using_Euler's_theorem
     // "In the special case where m is a prime, ϕ(m) = m-1, and a modular inverse is given by
@@ -128,10 +138,17 @@ impl chaum_pederson::Proof {
         message: &Message,
         plaintext: &BigUint,
     ) -> chaum_pederson::ResponseStatus {
-        // Check that `message` is equal to an encryption of `plaintext`.  The one-time "secret"
-        // doesn't matter (we aren't trying to hide the value of `plaintext`), so we just use zero.
-        let one_time_secret = 0_u8.into();
-        let encrypted_plaintext = Message::encrypt(group, public_key, plaintext, &one_time_secret);
+        // Check that `message` is equal to an encryption of `plaintext`.  Since we aren't trying
+        // to hide the value of `plaintext`, the value of the one-time "secret" doesn't matter - it
+        // only needs to match the secret used to construct the proof (`prove_plaintext`), so that
+        // the `encrypted_plaintext` is equal in both places.
+        let plaintext_one_time_secret = 0_u8.into();
+        let encrypted_plaintext = Message::encrypt(
+            group,
+            public_key,
+            plaintext,
+            &plaintext_one_time_secret,
+        );
         self.check_equal(group, public_key, message, &encrypted_plaintext)
     }
 
@@ -198,8 +215,7 @@ impl chaum_pederson::Proof {
         let combined_message = message1.h_sub(message2, group);
 
         // Combining messages also combines their one-time secret keys in the same way.
-        let neg_one_time_secret2 = (p - 1_u8) - one_time_secret2;
-        let combined_one_time_secret = (one_time_secret1 + neg_one_time_secret2) % &(p - 1_u8);
+        let combined_one_time_secret = mod_sub(one_time_secret1, one_time_secret2, &(p - 1_u8));
 
         Self::prove_zero(
             group,
@@ -221,6 +237,7 @@ impl chaum_pederson::Proof {
         one_time_exponent: &BigUint,
         gen_challenge: impl FnOnce(&Message) -> BigUint,
     ) -> chaum_pederson::Proof {
+        // This must match the `plaintext_one_time_secret` in `check_plaintext`.
         let plaintext_one_time_secret = 0_u8.into();
         let encrypted_plaintext = Message::encrypt(
             group,
@@ -237,6 +254,94 @@ impl chaum_pederson::Proof {
             &plaintext_one_time_secret,
             one_time_exponent,
             gen_challenge,
+        )
+    }
+
+
+    /// A "simulator" for the Chaum-Pedersen protocol.  Given a preselected `challenge` and
+    /// `response`, it constructs a valid-seeming proof that `message` is an encryption of zero,
+    /// regardless of the actual value of `message`.
+    pub fn simulate_zero(
+        group: &Group,
+        public_key: &BigUint,
+        message: &Message,
+        challenge: &BigUint,
+        response: &BigUint,
+    ) -> chaum_pederson::Proof {
+        let p = &group.prime;
+        let g = &group.generator;
+        let h = public_key;
+        let a = &message.public_key;
+        let b = &message.ciphertext;
+        let c = challenge;
+        let u = response;
+
+        // Our goal is to compute alpha and beta such that:
+        //      g.modpow(u, p) == alpha * a.modpow(c, p) % p;
+        //      h.modpow(u, p) == beta * b.modpow(c, p) % p;
+        // (From `check_zero`.)
+
+        let alpha = g.modpow(u, p) * mod_inv(&a.modpow(c, p), p) % p;
+        let beta = h.modpow(u, p) * mod_inv(&b.modpow(c, p), p) % p;
+
+        chaum_pederson::Proof {
+            committment: Message {
+                public_key: alpha,
+                ciphertext: beta,
+            },
+            challenge: c.clone(),
+            response: u.clone(),
+        }
+    }
+
+    /// A "simulator" for the Chaum-Pedersen protocol.  Given a preselected `challenge` and
+    /// `response`, it constructs a valid-seeming proof that `message1` and `message2` are
+    /// encryptions of the same value, regardless of the actual values of `message1` and
+    /// `message2`.
+    pub fn simulate_equal(
+        group: &Group,
+        public_key: &BigUint,
+        message1: &Message,
+        message2: &Message,
+        challenge: &BigUint,
+        response: &BigUint,
+    ) -> chaum_pederson::Proof {
+        let combined_message = message1.h_sub(message2, group);
+        Self::simulate_zero(
+            group,
+            public_key,
+            &combined_message,
+            challenge,
+            response,
+        )
+    }
+
+    /// A "simulator" for the Chaum-Pedersen protocol.  Given a preselected `challenge` and
+    /// `response`, it constructs a valid-seeming proof that `message` is an encryption of
+    /// `plaintext`, regardless of the actual values of `message` and `plaintext`.
+    pub fn simulate_plaintext(
+        group: &Group,
+        public_key: &BigUint,
+        message: &Message,
+        plaintext: &BigUint,
+        challenge: &BigUint,
+        response: &BigUint,
+    ) -> chaum_pederson::Proof {
+        // This must match the `plaintext_one_time_secret` in `check_plaintext`.
+        let plaintext_one_time_secret = 0_u8.into();
+        let encrypted_plaintext = Message::encrypt(
+            group,
+            public_key,
+            plaintext,
+            &plaintext_one_time_secret,
+        );
+        Self::simulate_equal(
+            group,
+            public_key,
+            message,
+            &encrypted_plaintext,
+            challenge,
+            response,
         )
     }
 }
@@ -491,6 +596,90 @@ fn prove_check_plaintext_extreme_nonce() {
     );
 
     let status = proof.check_plaintext(&group, &public_key, &message, &value);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt a nonzero value, construct a fake proof that it's zero using a pre-selected challenge,
+/// and check the proof (which should pass).
+#[test]
+fn simulate_check_zero() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 16351_u32.into();
+    let one_time_secret = 18328_u32.into();
+    let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+    let challenge = 11947_u32.into();
+    let response = 30170_u32.into();
+    let proof = chaum_pederson::Proof::simulate_zero(
+        &group,
+        &public_key,
+        &message,
+        &challenge,
+        &response,
+    );
+
+    let status = proof.check_zero(&group, &public_key, &message);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt a nonzero value, construct a fake proof that it's zero using a pre-selected challenge,
+/// and check the proof (which should pass).
+#[test]
+fn simulate_check_equal() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value1 = 16941_u32.into();
+    let one_time_secret1 = 14409_u32.into();
+    let message1 = Message::encrypt(&group, &public_key, &value1, &one_time_secret1);
+    let value2 = 20440_u32.into();
+    let one_time_secret2 = 15529_u32.into();
+    let message2 = Message::encrypt(&group, &public_key, &value2, &one_time_secret2);
+    let challenge = 2563_u32.into();
+    let response = 4492_u32.into();
+    let proof = chaum_pederson::Proof::simulate_equal(
+        &group,
+        &public_key,
+        &message1,
+        &message2,
+        &challenge,
+        &response,
+    );
+
+    let status = proof.check_equal(&group, &public_key, &message1, &message2);
+    dbg!(&status);
+    assert!(status.is_ok());
+}
+
+/// Encrypt a nonzero value, construct a fake proof that it's zero using a pre-selected challenge,
+/// and check the proof (which should pass).
+#[test]
+fn simulate_check_plaintext() {
+    let group = elgamal::test::group();
+    let public_key = elgamal::test::public_key();
+    let extended_base_hash = elgamal::test::extended_base_hash();
+
+    let value = 15271_u32.into();
+    let one_time_secret = 482_u32.into();
+    let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+    let plaintext = 8049_u32.into();
+    let challenge = 8508_u32.into();
+    let response = 23843_u32.into();
+    let proof = chaum_pederson::Proof::simulate_plaintext(
+        &group,
+        &public_key,
+        &message,
+        &plaintext,
+        &challenge,
+        &response,
+    );
+
+    let status = proof.check_plaintext(&group, &public_key, &message, &plaintext);
     dbg!(&status);
     assert!(status.is_ok());
 }
