@@ -1,9 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
 
 use crate::crypto::elgamal::{Group, Message};
-use crate::crypto::hash::Spec;
 use crate::mod_arith2::*;
 
 /// A pair of Chaum-Pedersen proof transcripts, used to prove that one of two properties is true

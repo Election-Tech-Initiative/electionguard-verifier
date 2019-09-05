@@ -1,9 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
 
 use crate::crypto::elgamal::{Group, Message};
-use crate::crypto::hash::Spec;
 use crate::mod_arith2::*;
 
 pub mod disj;
@@ -118,8 +116,6 @@ impl Proof {
         let p = &group.prime;
         let g = &group.generator;
         let h = public_key;
-        let a = &message.public_key;
-        let b = &message.ciphertext;
         let r = one_time_secret;
         let t = one_time_exponent;
 
@@ -702,7 +698,6 @@ mod test {
     fn simulate_transcript_zero() {
         let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
-        let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 16351_u32.into();
         let one_time_secret = 18328_u32.into();
@@ -732,7 +727,6 @@ mod test {
     fn simulate_transcript_equal() {
         let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
-        let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value1 = 16941_u32.into();
         let one_time_secret1 = 14409_u32.into();
@@ -767,7 +761,6 @@ mod test {
     fn simulate_transcript_plaintext() {
         let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
-        let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 15271_u32.into();
         let one_time_secret = 482_u32.into();

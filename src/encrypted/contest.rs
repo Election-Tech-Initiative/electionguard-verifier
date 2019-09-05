@@ -56,21 +56,6 @@ impl Contest {
     }
 }
 
-fn homomorphic_selection_sum(sels: &[Selection], p: &BigUint) -> Message {
-    let mut msg = Message {
-        public_key: 1_u8.into(),
-        ciphertext: 1_u8.into(),
-    };
-    for s in sels {
-        msg.public_key *= &s.message.public_key;
-        msg.ciphertext *= &s.message.ciphertext;
-    }
-    msg.public_key %= p;
-    msg.ciphertext %= p;
-
-    msg
-}
-
 impl Status {
     pub fn is_ok(&self) -> bool {
         self.selections.iter().all(selection::Status::is_ok) &&
