@@ -83,3 +83,13 @@ pub fn hash_umcc(
         &c2.ciphertext,
     ])
 }
+
+/// Hash together three BigUints.
+pub fn hash_uuu(
+    u1: &BigUint,
+    u2: &BigUint,
+    u3: &BigUint,
+) -> BigUint {
+    hash_uints(&[u1, u2, u3])
+}
+

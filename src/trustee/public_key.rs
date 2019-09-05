@@ -15,8 +15,9 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::schnorr::{self, Status};
-use crate::crypto::{elgamal::Group, hash};
+use crate::crypto::schnorr;
+use crate::crypto::elgamal::Group;
+use crate::crypto::hash::hash_uuu;
 
 #[derive(Serialize, Deserialize)]
 pub struct PublicKey {
@@ -28,18 +29,25 @@ pub struct PublicKey {
     proof: schnorr::Proof,
 }
 
+#[derive(Debug, Serialize)]
+pub struct Status {
+    proof: schnorr::Status,
+}
+
 impl PublicKey {
     pub fn check(&self, group: &Group, extended_base_hash: &BigUint) -> Status {
-        use hash::Input::{External, Proof};
-        use schnorr::HashInput::Committment;
+        Status {
+            proof: self.proof.check(
+                group,
+                &self.public_key,
+                |key, comm| hash_uuu(extended_base_hash, key, comm),
+            ),
+        }
+    }
+}
 
-        let hash_args = [
-            External(extended_base_hash),
-            External(&self.public_key),
-            Proof(Committment),
-        ];
-
-        self.proof
-            .check(group, &self.public_key, hash::Spec(&hash_args))
+impl Status {
+    pub fn is_ok(&self) -> bool {
+        self.proof.is_ok()
     }
 }

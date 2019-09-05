@@ -9,11 +9,12 @@ pub mod disj;
 
 /// A proof transcript from the Chaum-Pedersen protocol.
 ///
-/// We use the Chaum-Pedersen protocol to prove three kinds of properties:
+/// We use the Chaum-Pedersen protocol to prove four kinds of properties:
 ///
 /// * `zero`: An `elgamal::Message` is an encryption of zero.
 /// * `equal`: Two `elgamal::Message`s are encryptions of the same value.
 /// * `plaintext`: An `elgamal::Message` is an encryption of a particular plaintext value.
+/// * `exp`: Check that a `value` is some `base` raised to the prover's private key.
 ///
 /// If the transcript is valid for the property, and the challenge matches the expected value, then
 /// the property holds.
@@ -368,6 +369,114 @@ impl Proof {
             response,
         )
     }
+
+
+    /// Use this `Proof` to establish that `result = base^secret_key`, where `secret_key` is the
+    /// secret key corresponding to `public_key`.
+    pub fn check_exp(
+        &self,
+        group: &Group,
+        public_key: &BigUint,
+        base: &BigUint,
+        result: &BigUint,
+        gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
+    ) -> Status {
+        // See `transcript_exp` for explanation.
+        self.check_zero(
+            group,
+            base,
+            &Message {
+                public_key: public_key.clone(),
+                ciphertext: result.clone(),
+            },
+            gen_challenge,
+        )
+    }
+
+    /// Check validity of this transcript for proving that `result = base^secret_key`, where
+    /// `secret_key` is the secret key corresponding to `public_key`.
+    pub fn transcript_exp(
+        &self,
+        group: &Group,
+        public_key: &BigUint,
+        base: &BigUint,
+        result: &BigUint,
+    ) -> ResponseStatus {
+        // From the ElectionGuard spec:
+        //
+        // "trustee Ti computes its share of the decryption as Mi=A^si mod p."
+        // "commits to the pair ai,bi = g^ui mod p, A^ui mod p"
+        // "verified by checking that both g^vi mod p=ai*Ki^ci mod p and A^vi mod p=bi*Mi^ci mod p"
+        //
+        // (Notation: their commitment (ai, bi) is our (alpha, beta); their randomness `ui` is our
+        // `r`; their response `vi` is our `u`; their keypair (si, Ki) is our (s, h).
+        //
+        // Comparing this to `prove_zero` and `transcript_zero`, this turns out to be the same as a
+        // proof that the message (Ki, Mi) / (h, result) is an encryption of zero under key `A` /
+        // `base`.
+        //
+        // Or, looking at it another way, a proof that a message (a,b) is an encryption of zero
+        // under (s, h) is the same as proving that `b = a^s`.
+
+        self.transcript_zero(
+            group,
+            base,
+            &Message {
+                public_key: public_key.clone(),
+                ciphertext: result.clone(),
+            },
+        )
+    }
+
+    /// Construct a proof that `result = base^secret_key`, where `secret_key` is the secret key
+    /// corresponding to `public_key`.
+    pub fn prove_exp(
+        group: &Group,
+        public_key: &BigUint,
+        secret_key: &BigUint,
+        base: &BigUint,
+        result: &BigUint,
+        one_time_exponent: &BigUint,
+        gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
+    ) -> Proof {
+        // See `transcript_exp` for explanation.  In that formulation, it turns out the long-term
+        // secret key is the equivalent of the "one-time secret" used to encrypt the zero message.
+        Self::prove_zero(
+            group,
+            base,
+            &Message {
+                public_key: public_key.clone(),
+                ciphertext: result.clone(),
+            },
+            secret_key,
+            one_time_exponent,
+            gen_challenge,
+        )
+    }
+
+    /// A "simulator" for the Chaum-Pedersen protocol.  Given a preselected `challenge` and
+    /// `response`, it constructs a valid-seeming proof that `result = base^secret_key`, where
+    /// `secret_key` is the secret key corresponding to `public_key`.
+    pub fn simulate_exp(
+        group: &Group,
+        public_key: &BigUint,
+        base: &BigUint,
+        result: &BigUint,
+        challenge: &BigUint,
+        response: &BigUint,
+    ) -> Proof {
+        // See `transcript_exp` for explanation.
+        Self::simulate_zero(
+            group,
+            base,
+            &Message {
+                public_key: public_key.clone(),
+                ciphertext: result.clone(),
+            },
+            challenge,
+            response,
+        )
+    }
 }
 
 impl Status {
@@ -385,6 +494,7 @@ impl ResponseStatus {
 
 #[cfg(test)]
 mod test {
+    use num::BigUint;
     use crate::crypto::elgamal::{self, Message};
     use crate::crypto::hash::hash_umc;
     use super::Proof;
@@ -693,6 +803,79 @@ mod test {
         assert!(status.is_ok());
     }
 
+
+    /// Generate a key pair, raise a value to the secret key, construct a Chaum-Pederson proof the
+    /// exponentiation was done correctly, and check the proof.
+    #[test]
+    fn prove_check_exp() {
+        let group = elgamal::test::group();
+        let extended_base_hash = elgamal::test::extended_base_hash();
+
+        let secret_key = 22757_u32.into();
+        let public_key = group.public_key(&secret_key);
+
+        let base: BigUint = 1033_u32.into();
+        let result = base.modpow(&secret_key, &group.prime);
+        let one_time_exponent = 26480_u32.into();
+        let proof = Proof::prove_exp(
+            &group,
+            &public_key,
+            &secret_key,
+            &base,
+            &result,
+            &one_time_exponent,
+            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
+        );
+
+        let status = proof.check_exp(
+            &group,
+            &public_key,
+            &base,
+            &result,
+            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
+        );
+        dbg!(&status);
+        assert!(status.is_ok());
+    }
+
+    /// Generate a key pair, raise a value to some other exponent, construct an invalid
+    /// Chaum-Pederson proof claiming that the exponentiation was done correctly, and check the
+    /// proof.
+    #[test]
+    #[should_panic]
+    fn prove_check_exp_fail() {
+        let group = elgamal::test::group();
+        let extended_base_hash = elgamal::test::extended_base_hash();
+
+        let secret_key = 22757_u32.into();
+        let public_key = group.public_key(&secret_key);
+        let other_exponent = 19315_u32.into();
+
+        let base: BigUint = 1033_u32.into();
+        let result = base.modpow(&other_exponent, &group.prime);
+        let one_time_exponent = 26480_u32.into();
+        let proof = Proof::prove_exp(
+            &group,
+            &public_key,
+            &secret_key,
+            &base,
+            &result,
+            &one_time_exponent,
+            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
+        );
+
+        let status = proof.check_exp(
+            &group,
+            &public_key,
+            &base,
+            &result,
+            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
+        );
+        dbg!(&status);
+        assert!(status.is_ok());
+    }
+
+
     /// Encrypt a nonzero value, construct a fake proof that it's zero using a pre-selected challenge,
     /// and check the proof (which should pass).
     #[test]
@@ -783,6 +966,38 @@ mod test {
             &public_key,
             &message,
             &plaintext,
+        );
+        dbg!(&status);
+        assert!(status.is_ok());
+    }
+
+    /// Construct a fake proof that `result` is `base` raised to a secret key, and check the proof
+    /// (which should pass).
+    #[test]
+    fn simulate_transcript_exp() {
+        let group = elgamal::test::group();
+
+        let public_key = 31195_u32.into();
+        let other_exponent = 19315_u32.into();
+
+        let base: BigUint = 1033_u32.into();
+        let result = base.modpow(&other_exponent, &group.prime);
+        let challenge = 15848_u32.into();
+        let response = 12460_u32.into();
+        let proof = Proof::simulate_exp(
+            &group,
+            &public_key,
+            &base,
+            &result,
+            &challenge,
+            &response,
+        );
+
+        let status = proof.transcript_exp(
+            &group,
+            &public_key,
+            &base,
+            &result,
         );
         dbg!(&status);
         assert!(status.is_ok());
