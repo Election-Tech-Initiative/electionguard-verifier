@@ -36,6 +36,21 @@ pub struct Message {
     pub ciphertext: BigUint,
 }
 
+impl Group {
+    pub fn public_key(
+        &self,
+        secret_key: &BigUint,
+    ) -> BigUint {
+        let p = &self.prime;
+        let g = &self.generator;
+        let s = secret_key;
+
+        let h = g.modpow(s, p);
+
+        h
+    }
+}
+
 impl Message {
     /// Encrypt `m` using `public_key` and a `one_time_secret` key.
     pub fn encrypt(
