@@ -12,7 +12,7 @@ goodness that we want.
 
 - [X] Check proofs of public key posession (Schnorr proofs).
 - [X] Check proofs of selection being 0/1.
-- [ ] Check proofs of correct numbers of selections in each contest.
+- [X] Check proofs of correct numbers of selections in each contest.
 - [ ] Check proofs of decryption for spoiled ballots (fragments and shares).
 - [ ] Check proofs of decryption for tallies (fragments and shares).
 - [ ] Add optimized method for checking CP proofs where the message is
