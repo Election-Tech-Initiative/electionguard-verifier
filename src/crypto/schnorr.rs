@@ -1,9 +1,7 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
 
 use crate::crypto::elgamal::Group;
-use super::hash::Spec;
 use crate::mod_arith2::*;
 
 /// A proof of posession of the private key.
@@ -37,47 +35,10 @@ pub struct Status {
     response: bool,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum HashInput {
-    Committment,
-}
-
 impl Proof {
-    pub fn check(&self, group: &Group, public_key: &BigUint, spec: Spec<HashInput>) -> Status {
-        Status {
-            challenge: self.is_challenge_ok(spec),
-            response: self.is_response_ok(group, public_key),
-        }
-    }
-
-    #[allow(clippy::many_single_char_names)]
-    fn is_response_ok(&self, group: &Group, public_key: &BigUint) -> bool {
-        let Group {
-            generator: g,
-            prime: p,
-        } = group;
-        let Proof {
-            committment: k,
-            challenge: c,
-            response: u,
-        } = self;
-        let h = public_key;
-
-        BigUint::modpow(g, u, p) == (k * BigUint::modpow(h, c, p)) % p
-    }
-
-    fn is_challenge_ok(&self, spec: Spec<HashInput>) -> bool {
-        let expected = spec.exec::<_, Sha256>(|x| match x {
-            HashInput::Committment => &self.committment,
-        });
-
-        expected == self.challenge
-    }
-
-
     /// Use this `Proof` to establish that the prover possesses the private key corresponding to
     /// `public_key`.
-    pub fn check2(
+    pub fn check(
         &self,
         group: &Group,
         public_key: &BigUint,
@@ -202,7 +163,7 @@ mod test {
             |key, comm| hash_uuu(&extended_base_hash, key, comm),
         );
 
-        let status = proof.check2(
+        let status = proof.check(
             &group,
             &public_key,
             |key, comm| hash_uuu(&extended_base_hash, key, comm),
@@ -231,7 +192,7 @@ mod test {
             |key, comm| hash_uuu(&extended_base_hash, key, comm),
         );
 
-        let status = proof.check2(
+        let status = proof.check(
             &group,
             &public_key,
             |key, comm| hash_uuu(&extended_base_hash, key, comm),

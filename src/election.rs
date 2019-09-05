@@ -2,9 +2,9 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::elgamal::{self, Group};
-use crate::crypto::schnorr;
 use crate::decryption;
 use crate::encrypted;
+use crate::trustee;
 use crate::trustee::public_key::PublicKey;
 
 /// All the parameters necessary to form the election.
@@ -68,7 +68,7 @@ pub struct Record {
 
 #[derive(Debug, Serialize)]
 pub struct Status {
-    trustee_public_keys: Vec<Vec<schnorr::Status>>,
+    trustee_public_keys: Vec<Vec<trustee::public_key::Status>>,
     cast_ballots: Vec<encrypted::ballot::Status>,
 }
 
@@ -93,7 +93,7 @@ impl Record {
         keys: &[Vec<PublicKey>],
         group: &Group,
         extended_base_hash: &BigUint,
-    ) -> Vec<Vec<schnorr::Status>> {
+    ) -> Vec<Vec<trustee::public_key::Status>> {
         keys.iter()
             .map(|keys| {
                 keys.iter()
@@ -122,9 +122,9 @@ impl Status {
             && Self::is_cast_ballots_ok(&self.cast_ballots)
     }
 
-    fn is_trustee_public_keys_ok(keys: &[Vec<schnorr::Status>]) -> bool {
+    fn is_trustee_public_keys_ok(keys: &[Vec<trustee::public_key::Status>]) -> bool {
         keys.iter()
-            .all(|keys| keys.iter().all(schnorr::Status::is_ok))
+            .all(|keys| keys.iter().all(trustee::public_key::Status::is_ok))
     }
 
     fn is_cast_ballots_ok(ballots: &[encrypted::ballot::Status]) -> bool {
