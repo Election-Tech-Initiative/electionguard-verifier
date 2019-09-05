@@ -28,9 +28,7 @@ impl Ballot {
         extended_base_hash: &BigUint,
     ) -> Status {
         Status {
-            contests: self
-                .contests
-                .iter()
+            contests: self.contests.iter()
                 .map(move |contest| contest.check(group, public_key, extended_base_hash))
                 .collect(),
         }
