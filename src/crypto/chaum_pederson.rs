@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
 use crate::crypto::elgamal::{Group, Message};
-use crate::crypto::hash::{Spec, hash_uints};
+use crate::crypto::hash::Spec;
 use crate::mod_arith2::*;
 
 pub mod disj;
@@ -15,6 +15,9 @@ pub mod disj;
 /// * `zero`: An `elgamal::Message` is an encryption of zero.
 /// * `equal`: Two `elgamal::Message`s are encryptions of the same value.
 /// * `plaintext`: An `elgamal::Message` is an encryption of a particular plaintext value.
+///
+/// If the transcript is valid for the property, and the challenge matches the expected value, then
+/// the property holds.
 ///
 /// For each of these properties, the `Proof` API provides four methods:
 ///
@@ -491,7 +494,7 @@ impl ResponseStatus {
 #[cfg(test)]
 mod test {
     use crate::crypto::elgamal::{self, Message};
-    use crate::crypto::hash::{hash_umc, hash_umcc};
+    use crate::crypto::hash::hash_umc;
     use super::Proof;
 
     /// Encrypt a zero, construct a Chaum-Pederson proof that it's zero, and check the proof.
