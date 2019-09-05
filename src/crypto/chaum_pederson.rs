@@ -2,6 +2,7 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::elgamal::{Group, Message};
+use crate::crypto::group;
 use crate::mod_arith2::*;
 
 pub mod disj;
