@@ -26,40 +26,7 @@ pub struct Status {
     response_right: super::ResponseStatus,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum HashInput {
-    Left(super::HashInput),
-    Right(super::HashInput),
-}
-
 impl Proof {
-    pub fn check(
-        &self,
-        group: &Group,
-        message: &Message,
-        public_key: &BigUint,
-        spec: Spec<HashInput>,
-    ) -> Status {
-        Status {
-            challenge: self.is_challenge_ok(group, spec),
-            response_left: self.left.check_response(group, message, public_key),
-            response_right: self.right.check_response(group, message, public_key),
-        }
-    }
-
-    fn is_challenge_ok(&self, group: &Group, spec: Spec<HashInput>) -> bool {
-        let Group { prime: p, .. } = group;
-
-        let expected = spec.exec::<_, Sha256>(|x| match x {
-            HashInput::Left(x) => &self.left.resolver()(x),
-            HashInput::Right(x) => &self.right.resolver()(x),
-        });
-
-        expected == (&self.left.challenge + &self.right.challenge) % (p - 1u8)
-    }
-
-
-
     pub fn check_zero_one(
         &self,
         group: &Group,
