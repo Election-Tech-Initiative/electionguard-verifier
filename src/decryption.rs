@@ -49,3 +49,16 @@ pub struct Fragment {
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     trustee_index: BigUint,
 }
+
+#[derive(Debug, Serialize)]
+pub struct ShareStatus {
+    /// Are the fragments valid?
+    fragments: Option<Vec<FragmentStatus>>,
+    proof: chaum_pederson::Status,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FragmentStatus {
+    // TODO
+    //proof: chaum_pederson::Status,
+}

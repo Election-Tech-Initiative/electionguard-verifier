@@ -9,7 +9,7 @@ use crate::mod_arith2::*;
 ///
 /// If both transcripts are valid for their respective properties, and the sum of the two
 /// challenges matches the expected value, then one of the properties holds.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Proof {
     #[serde(rename = "zero_proof")]
     pub left: super::Proof,

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Auxiliary information about a ballot other than the selections made by the voter.
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Information {
     /// The date the ballot was encrypted.
     date: String,

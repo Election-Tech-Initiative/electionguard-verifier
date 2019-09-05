@@ -3,7 +3,7 @@ use num::traits::identities::{Zero, One};
 use serde::{Deserialize, Serialize};
 use crate::mod_arith2::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone)]
 pub struct Group {
     /// The generator `g` of the multiplicative subgroup `Z^*_q`,
     /// where `p = 2q + 1`.
@@ -23,7 +23,7 @@ pub struct Group {
 /// A message that has been encrypted using exponential ElGamal.
 ///
 /// The encrypted message of the selection (the one or zero).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Message {
     /// The one-time public key `a = gʳ`, where `r` is the randomly
     /// generated one-time public key.

@@ -29,7 +29,7 @@ pub mod disj;
 ///   actually hold, this method will succeed but produce an invalid proof.)
 /// * `simulate_*`: Construct a fake `Proof` using a preselected challenge.  The resulting proof
 ///   will pass the `transcript` check, but will fail `check` due to having the wrong challenge.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Proof {
     pub committment: Message,
     #[serde(deserialize_with = "crate::deserialize::biguint")]
