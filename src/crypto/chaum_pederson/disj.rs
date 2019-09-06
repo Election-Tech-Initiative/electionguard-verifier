@@ -32,11 +32,11 @@ impl Proof {
         gen_challenge: impl FnOnce(&Message, &Message, &Message) -> BigUint,
     ) -> Status {
         let combined_challenge = &self.left.challenge + &self.right.challenge;
-        let expected_challenge = gen_challenge(
+        let expected_challenge = Exponent::new(gen_challenge(
             message,
             &self.left.committment,
             &self.right.committment,
-        ).into();
+        ));
         let challenge_ok = combined_challenge == expected_challenge;
 
         let (response_left_status, response_right_status) = self.transcript_zero_one(
@@ -104,7 +104,8 @@ impl Proof {
                     commitment_zero,
                     &proof_one.committment,
                 );
-                &combined_challenge - fake_challenge.as_uint().clone()
+                // This `a + -b` order makes sure we don't try to produce a negative BigUint.
+                &combined_challenge + (-fake_challenge).as_uint().clone()
             },
         );
         Proof {
@@ -147,7 +148,7 @@ impl Proof {
                     &proof_zero.committment,
                     commitment_one,
                 );
-                &combined_challenge - fake_challenge.as_uint().clone()
+                &combined_challenge + (-fake_challenge).as_uint().clone()
             },
         );
         Proof {

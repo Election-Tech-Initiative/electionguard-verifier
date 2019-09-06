@@ -2,7 +2,7 @@ use digest::Digest;
 use num::BigUint;
 use sha2::Sha256;
 use crate::crypto::elgamal;
-use crate::crypto::group::{Element, Exponent, prime_minus_one};
+use crate::crypto::group::{Element, Exponent};
 
 /// Specifies how the challenge should be computed by specifying which
 /// inputs should be hashed, and in what order.
@@ -64,7 +64,7 @@ pub fn hash_umc(
         m.ciphertext.as_uint(),
         c.public_key.as_uint(),
         c.ciphertext.as_uint(),
-    ]) % prime_minus_one()
+    ])
 }
 
 /// Hash together a BigUint, a message, and two commitments.
@@ -82,7 +82,7 @@ pub fn hash_umcc(
         c1.ciphertext.as_uint(),
         c2.public_key.as_uint(),
         c2.ciphertext.as_uint(),
-    ]) % prime_minus_one()
+    ])
 }
 
 /// Hash together three BigUints.
@@ -91,7 +91,7 @@ pub fn hash_uuu(
     u2: &BigUint,
     u3: &BigUint,
 ) -> BigUint {
-    hash_uints(&[u1, u2, u3]) % prime_minus_one()
+    hash_uints(&[u1, u2, u3])
 }
 
 /// Hash together a BigUint and two group Elements.
@@ -100,6 +100,6 @@ pub fn hash_uee(
     e1: &Element,
     e2: &Element,
 ) -> BigUint {
-    hash_uints(&[u, e1.as_uint(), e2.as_uint()]) % prime_minus_one()
+    hash_uints(&[u, e1.as_uint(), e2.as_uint()])
 }
 

@@ -60,7 +60,8 @@ impl Proof {
         message: &Message,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Status {
-        let challenge_ok = self.challenge == gen_challenge(message, &self.committment).into();
+        let challenge_ok =
+            self.challenge == Exponent::new(gen_challenge(message, &self.committment));
         let response_status = self.transcript_zero(
             public_key,
             message,
@@ -121,7 +122,7 @@ impl Proof {
             public_key: alpha,
             ciphertext: beta,
         };
-        let challenge = gen_challenge(message, &commitment).into();
+        let challenge = Exponent::new(gen_challenge(message, &commitment));
         let c = &challenge;
 
         // "We response with u = t + cr like we would if this were a Schnorr proof for posession of

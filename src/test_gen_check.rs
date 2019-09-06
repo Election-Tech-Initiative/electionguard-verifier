@@ -48,6 +48,13 @@ fn test_normal() {
 
     let record = generate::generate(&mut rand::thread_rng(), e);
 
-    let ok = check::check(&record);
-    assert!(ok);
+    match check::check(&record) {
+        Ok(()) => {},
+        Err(errs) => {
+            for err in &errs {
+                eprintln!("{}", err);
+            }
+            panic!("check failed with {} errors", errs.len());
+        },
+    }
 }

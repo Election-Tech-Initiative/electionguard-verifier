@@ -40,7 +40,8 @@ impl Proof {
         public_key: &Element,
         gen_challenge: impl FnOnce(&Element, &Element) -> BigUint,
     ) -> Status {
-        let challenge_ok = self.challenge == gen_challenge(public_key, &self.committment).into();
+        let challenge_ok =
+            self.challenge == Exponent::new(gen_challenge(public_key, &self.committment));
         let response_ok = self.transcript(
             public_key,
         );
@@ -83,7 +84,7 @@ impl Proof {
 
         // "The verifier gives the prover a random challenge c such that 0 < c < p - 1"
         let commitment = k;
-        let challenge = gen_challenge(public_key, &commitment).into();
+        let challenge = Exponent::new(gen_challenge(public_key, &commitment));
         let c = &challenge;
 
         // "The prover responds to the challenge with u = r + cs \bmod p - 1, where s is the secret

@@ -9,5 +9,6 @@ pub mod check;
 pub mod schema;
 pub mod serialize;
 pub mod generate;
+pub mod errors;
 
 #[cfg(test)] mod test_gen_check;
