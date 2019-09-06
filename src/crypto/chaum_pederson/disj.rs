@@ -1,8 +1,8 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::elgamal::{Group, Message};
-use crate::mod_arith2::*;
+use crate::crypto::elgamal::Message;
+use crate::crypto::group::{Element, Exponent};
 
 /// A pair of Chaum-Pedersen proof transcripts, used to prove that one of two properties is true
 /// (without revealing which one).
@@ -27,23 +27,19 @@ pub struct Status {
 impl Proof {
     pub fn check_zero_one(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
         gen_challenge: impl FnOnce(&Message, &Message, &Message) -> BigUint,
     ) -> Status {
-        let p = &group.prime;
-
-        let combined_challenge = (&self.left.challenge + &self.right.challenge) % &(p - 1_u8);
+        let combined_challenge = &self.left.challenge + &self.right.challenge;
         let expected_challenge = gen_challenge(
             message,
             &self.left.committment,
             &self.right.committment,
-        ) % &(p - 1_u8);
+        ).into();
         let challenge_ok = combined_challenge == expected_challenge;
 
         let (response_left_status, response_right_status) = self.transcript_zero_one(
-            group,
             public_key,
             message,
         );
@@ -57,19 +53,16 @@ impl Proof {
 
     pub fn transcript_zero_one(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
     ) -> (super::ResponseStatus, super::ResponseStatus) {
         (
             self.left.transcript_plaintext(
-                group,
                 public_key,
                 message,
                 &0_u8.into(),
             ),
             self.right.transcript_plaintext(
-                group,
                 public_key,
                 message,
                 &1_u8.into(),
@@ -80,17 +73,15 @@ impl Proof {
     /// Given a `message` that's an encryption of zero, construct a proof that it's either an
     /// encryption of zero or an encryption of one.
     pub fn prove_zero(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
-        one_time_secret: &BigUint,
-        real_one_time_exponent: &BigUint,
-        fake_challenge: &BigUint,
-        fake_response: &BigUint,
+        one_time_secret: &Exponent,
+        real_one_time_exponent: &Exponent,
+        fake_challenge: &Exponent,
+        fake_response: &Exponent,
         mut gen_challenge: impl FnMut(&Message, &Message, &Message) -> BigUint,
     ) -> Proof {
         let proof_one = super::Proof::simulate_plaintext(
-            group,
             public_key,
             message,
             &1_u8.into(),
@@ -98,7 +89,6 @@ impl Proof {
             fake_response,
         );
         let proof_zero = super::Proof::prove_plaintext(
-            group,
             public_key,
             message,
             one_time_secret,
@@ -114,7 +104,7 @@ impl Proof {
                     commitment_zero,
                     &proof_one.committment,
                 );
-                mod_sub(&combined_challenge, fake_challenge, &(&group.prime - 1_u8))
+                &combined_challenge - fake_challenge.as_uint().clone()
             },
         );
         Proof {
@@ -126,17 +116,15 @@ impl Proof {
     /// Given a `message` that's an encryption of one, construct a proof that it's either an
     /// encryption of zero or an encryption of one.
     pub fn prove_one(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
-        one_time_secret: &BigUint,
-        real_one_time_exponent: &BigUint,
-        fake_challenge: &BigUint,
-        fake_response: &BigUint,
+        one_time_secret: &Exponent,
+        real_one_time_exponent: &Exponent,
+        fake_challenge: &Exponent,
+        fake_response: &Exponent,
         mut gen_challenge: impl FnMut(&Message, &Message, &Message) -> BigUint,
     ) -> Proof {
         let proof_zero = super::Proof::simulate_plaintext(
-            group,
             public_key,
             message,
             &0_u8.into(),
@@ -144,7 +132,6 @@ impl Proof {
             fake_response,
         );
         let proof_one = super::Proof::prove_plaintext(
-            group,
             public_key,
             message,
             one_time_secret,
@@ -160,7 +147,7 @@ impl Proof {
                     &proof_zero.committment,
                     commitment_one,
                 );
-                mod_sub(&combined_challenge, fake_challenge, &(&group.prime - 1_u8))
+                &combined_challenge - fake_challenge.as_uint().clone()
             },
         );
         Proof {
@@ -187,17 +174,15 @@ mod test {
     /// proof.
     #[test]
     fn prove_check_disj_zero() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let one_time_secret = 8768_u32.into();
-        let message = Message::encrypt(&group, &public_key, &0_u8.into(), &one_time_secret);
+        let message = Message::encrypt(&public_key, &0_u8.into(), &one_time_secret);
         let real_one_time_exponent = 24256_u32.into();
         let fake_challenge = 30125_u32.into();
         let fake_response = 6033_u32.into();
         let proof = Proof::prove_zero(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -208,7 +193,6 @@ mod test {
         );
 
         let status = proof.check_zero_one(
-            &group,
             &public_key,
             &message,
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
@@ -221,17 +205,15 @@ mod test {
     /// proof.
     #[test]
     fn prove_check_disj_one() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let one_time_secret = 8768_u32.into();
-        let message = Message::encrypt(&group, &public_key, &1_u8.into(), &one_time_secret);
+        let message = Message::encrypt(&public_key, &1_u8.into(), &one_time_secret);
         let real_one_time_exponent = 24256_u32.into();
         let fake_challenge = 30125_u32.into();
         let fake_response = 6033_u32.into();
         let proof = Proof::prove_one(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -242,7 +224,6 @@ mod test {
         );
 
         let status = proof.check_zero_one(
-            &group,
             &public_key,
             &message,
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
@@ -256,17 +237,15 @@ mod test {
     #[test]
     #[should_panic]
     fn prove_check_disj_two() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let one_time_secret = 8768_u32.into();
-        let message = Message::encrypt(&group, &public_key, &2_u8.into(), &one_time_secret);
+        let message = Message::encrypt(&public_key, &2_u8.into(), &one_time_secret);
         let real_one_time_exponent = 24256_u32.into();
         let fake_challenge = 30125_u32.into();
         let fake_response = 6033_u32.into();
         let proof = Proof::prove_zero(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -277,7 +256,6 @@ mod test {
         );
 
         let status = proof.check_zero_one(
-            &group,
             &public_key,
             &message,
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
@@ -291,17 +269,15 @@ mod test {
     #[test]
     #[should_panic]
     fn prove_check_disj_one_flipped() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let one_time_secret = 8768_u32.into();
-        let message = Message::encrypt(&group, &public_key, &0_u8.into(), &one_time_secret);
+        let message = Message::encrypt(&public_key, &0_u8.into(), &one_time_secret);
         let real_one_time_exponent = 24256_u32.into();
         let fake_challenge = 30125_u32.into();
         let fake_response = 6033_u32.into();
         let proof = Proof::prove_one(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -312,7 +288,6 @@ mod test {
         );
 
         let status = proof.check_zero_one(
-            &group,
             &public_key,
             &message,
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),

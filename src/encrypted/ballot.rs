@@ -2,7 +2,7 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::ballot;
-use crate::crypto::elgamal::Group;
+use crate::crypto::group::Element;
 
 use super::contest::{self, Contest};
 
@@ -23,13 +23,12 @@ pub struct Status {
 impl Ballot {
     pub fn check(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         extended_base_hash: &BigUint,
     ) -> Status {
         Status {
             contests: self.contests.iter()
-                .map(move |contest| contest.check(group, public_key, extended_base_hash))
+                .map(move |contest| contest.check(public_key, extended_base_hash))
                 .collect(),
         }
     }

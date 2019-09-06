@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use super::selection::{self, Selection};
 use crate::crypto::chaum_pederson;
-use crate::crypto::elgamal::{Group, Message};
+use crate::crypto::elgamal::Message;
 use crate::crypto::hash::hash_umc;
+use crate::crypto::group::Element;
 
 /// A contests consists of a list of encrypted selections, along with
 /// a proof that exactly `L` of them have been selected.
@@ -32,21 +33,19 @@ pub struct Status {
 impl Contest {
     pub fn check<'a>(
         &'a self,
-        group: &'a Group,
-        public_key: &'a BigUint,
+        public_key: &'a Element,
         extended_base_hash: &'a BigUint,
     ) -> Status {
         let selection_sum_message = self.selections.iter().fold(
-            Message::encrypt(group, public_key, &0_u8.into(), &0_u8.into()),
-            |cur, sel| cur.h_add(&sel.message, group),
+            Message::encrypt(public_key, &0_u32.into(), &0_u32.into()),
+            |cur, sel| cur.h_add(&sel.message),
         );
 
         Status {
             selections: self.selections.iter()
-                .map(move |sel| sel.check(group, public_key, extended_base_hash))
+                .map(move |sel| sel.check(public_key, extended_base_hash))
                 .collect(),
             num_selections: self.num_selections_proof.check_plaintext(
-                group,
                 public_key,
                 &selection_sum_message,
                 &self.max_selections,

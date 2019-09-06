@@ -5,6 +5,7 @@ use crate::ballot;
 use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal;
 use crate::crypto::schnorr;
+use crate::crypto::group::{Element, Exponent};
 
 /// All the parameters necessary to form the election.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -24,9 +25,12 @@ pub struct Parameters {
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     pub threshold: BigUint,
 
-    /// The Elgamal group parameters: a prime modulus `p` and generator `g`.
-    #[serde(flatten)]
-    pub group: elgamal::Group,
+    /// The prime modulus of the group used for encryption.
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    pub prime: BigUint,
+
+    /// The generator of the group used for encryption.
+    pub generator: Element,
 }
 
 /// All data from an ElectionGuard election
@@ -45,8 +49,7 @@ pub struct Record {
     pub trustee_public_keys: Vec<TrusteePublicKey>,
 
     /// The election public key `K`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    pub joint_public_key: BigUint,
+    pub joint_public_key: Element,
 
     /// The extended base hash `Q̅`.
     #[serde(deserialize_with = "crate::deserialize::hash")]
@@ -78,8 +81,7 @@ pub struct TrusteePublicKey {
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct TrusteeCoefficient {
     /// The public key `K_ij`generated from secret coefficient `a_ij`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    pub public_key: BigUint,
+    pub public_key: Element,
 
     /// A proof of posession of the private key.
     pub proof: schnorr::Proof,
@@ -149,8 +151,7 @@ pub struct DecryptedValue {
     pub cleartext: BigUint,
 
     /// The decrypted value `M = g^t`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    pub decrypted_value: BigUint,
+    pub decrypted_value: Element,
 
     /// The encryption of `t`.  Decrypting this reveals `g^t`, which is `decrypted_value` above.
     pub encrypted_value: elgamal::Message,

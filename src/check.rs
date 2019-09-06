@@ -1,9 +1,10 @@
 use num::BigUint;
-use num::traits::identities::{Zero, One};
+use num::traits::{Zero, One, Pow};
 
+use crate::crypto::group::{Element, Exponent, generator};
 use crate::crypto::elgamal::Message;
 use crate::schema::*;
-use crate::crypto::hash::{hash_uuu, hash_umc, hash_umcc};
+use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
 
 macro_rules! check {
     ($cond:expr) => {
@@ -28,9 +29,8 @@ pub fn check(r: &Record) -> bool {
 
         for tc in &tpk.coefficients {
             check!(tc.proof.check(
-                &r.parameters.group,
                 &r.joint_public_key,
-                |key, comm| hash_uuu(&r.extended_base_hash, key, comm),
+                |key, comm| hash_uee(&r.extended_base_hash, key, comm),
             ).is_ok());
         }
     }
@@ -48,7 +48,6 @@ pub fn check(r: &Record) -> bool {
 
             for cs in &cc.selections {
                 check!(cs.proof.check_zero_one(
-                    &r.parameters.group,
                     &r.joint_public_key,
                     &cs.message,
                     |msg, comm0, comm1| hash_umcc(&r.extended_base_hash, msg, comm0, comm1),
@@ -56,7 +55,6 @@ pub fn check(r: &Record) -> bool {
             }
 
             check!(cc.num_selections_proof.check_plaintext(
-                &r.parameters.group,
                 &r.joint_public_key,
                 &compute_selection_sum(&cc.selections),
                 &cc.max_selections,
@@ -104,8 +102,7 @@ pub fn check(r: &Record) -> bool {
 
 
 fn check_decrypted_value(r: &Record, dv: &DecryptedValue) -> bool {
-    check!(dv.decrypted_value ==
-        r.parameters.group.generator.modpow(&dv.cleartext, &r.parameters.group.prime));
+    check!(dv.decrypted_value == generator().pow(&dv.cleartext));
 
     check!(false);  // TODO: encrypted_value decrypts to decrypted_value
 
@@ -130,12 +127,12 @@ fn check_decrypted_value(r: &Record, dv: &DecryptedValue) -> bool {
 fn compute_selection_sum(cast_selections: &[CastSelection]) -> Message {
     // (1, 1) is a valid encryption of zero for any key, with zero as the one-time secret.
     let mut sum = Message {
-        public_key: BigUint::one(),
-        ciphertext: BigUint::one(),
+        public_key: Element::one(),
+        ciphertext: Element::one(),
     };
 
     for cs in cast_selections {
-        sum = sum.h_add(&cs.message, unimplemented!());
+        sum = sum.h_add(&cs.message);
     }
 
     sum
@@ -147,14 +144,14 @@ fn compute_encrypted_tally(
     selection_index: usize,
 ) -> Message {
     let mut sum = Message {
-        public_key: BigUint::one(),
-        ciphertext: BigUint::one(),
+        public_key: Element::one(),
+        ciphertext: Element::one(),
     };
 
     for cb in cast_ballots {
         if let Some(cc) = cb.contests.get(contest_index) {
             if let Some(cs) = cc.selections.get(selection_index) {
-                sum = sum.h_add(&cs.message, unimplemented!());
+                sum = sum.h_add(&cs.message);
             }
         }
     }
@@ -170,12 +167,12 @@ fn compute_base_hash(
 
 fn compute_joint_public_key(
     trustee_public_keys: &[TrusteePublicKey],
-) -> BigUint {
-    let mut product = BigUint::one();
+) -> Element {
+    let mut product = Element::one();
 
     for tpk in trustee_public_keys {
         if let Some(tc) = tpk.coefficients.get(0) {
-            product *= &tc.public_key;
+            product = &product * &tc.public_key;
         }
     }
 

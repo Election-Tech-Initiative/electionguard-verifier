@@ -11,6 +11,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Element {
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
     element: BigUint,
 }
 
@@ -18,6 +19,7 @@ pub struct Element {
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Exponent {
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
     exponent: BigUint,
 }
 
@@ -38,6 +40,10 @@ impl Element {
     fn unchecked(element: BigUint) -> Element {
         Element { element }
     }
+
+    pub fn as_uint(&self) -> &BigUint {
+        &self.element
+    }
 }
 
 impl Exponent {
@@ -53,11 +59,25 @@ impl Exponent {
         Exponent { exponent }
     }
 
-    /// Return the element one, which is always part of any valid exponential
-    /// group.
-    pub fn one() -> Exponent {
-        Exponent::unchecked(BigUint::one())
+    pub fn as_uint(&self) -> &BigUint {
+        &self.exponent
     }
+}
+
+lazy_static! {
+    static ref GENERATOR_ELEMENT: Element = Element::gen();
+}
+
+pub fn generator() -> &'static Element {
+    &*GENERATOR_ELEMENT
+}
+
+pub fn prime() -> &'static BigUint {
+    &*PRIME_MODULUS
+}
+
+pub fn prime_minus_one() -> &'static BigUint {
+    &*PRIME_MODULUS_MINUS_ONE
 }
 
 
@@ -169,6 +189,26 @@ impl Sub for &Exponent {
     }
 }
 
+impl Mul for Exponent {
+    type Output = Exponent;
+    /// Multiply group exponents, modulo the group's prime modulus *minus one*.
+    fn mul(self, other: Exponent) -> Exponent {
+        let a = self.exponent;
+        let b = other.exponent;
+        Exponent::unchecked(a * b % &*PRIME_MODULUS_MINUS_ONE)
+    }
+}
+
+impl Mul for &Exponent {
+    type Output = Exponent;
+    /// Multiply group exponents, modulo the group's prime modulus *minus one*.
+    fn mul(self, other: &Exponent) -> Exponent {
+        let a = &self.exponent;
+        let b = &other.exponent;
+        Exponent::unchecked(a * b % &*PRIME_MODULUS_MINUS_ONE)
+    }
+}
+
 impl Neg for Exponent {
     type Output = Exponent;
     /// Negate an element of the exponential group.
@@ -196,7 +236,7 @@ impl Neg for &Exponent {
 
 // Raising a group element to an element of the exponential additive group
 
-impl Pow<&Exponent> for Element {
+impl Pow<&Exponent> for &Element {
     type Output = Element;
     /// Raise one group element to the power of an element of the corresponding
     /// exponential group, modulo the group's prime modulus.
@@ -205,12 +245,11 @@ impl Pow<&Exponent> for Element {
     }
 }
 
-impl Pow<Exponent> for Element {
+impl Pow<&BigUint> for &Element {
     type Output = Element;
-    /// Raise one group element to the power of an element of the corresponding
-    /// exponential group, modulo the group's prime modulus.
-    fn pow(self, other: Exponent) -> Element {
-        self.pow(&other)
+    /// Raise a group element to an arbitrary exponent.
+    fn pow(self, other: &BigUint) -> Element {
+        Element::unchecked(self.element.modpow(other, &*PRIME_MODULUS))
     }
 }
 
@@ -236,7 +275,7 @@ impl From<BigUint> for Element {
     /// This succeeds if and only if the given value is strictly less than the
     /// prime modulus of the group.
     fn from(number: BigUint) -> Self {
-        if number < *PRIME_MODULUS {
+        if !number.is_zero() && number < *PRIME_MODULUS {
             Element{element: number}
         } else {
             panic!("argument out of range for conversion to group element")
@@ -253,6 +292,22 @@ impl From<BigUint> for Exponent {
         } else {
             panic!("argument out of range for conversion to group exponent")
         }
+    }
+}
+
+impl From<u32> for Element {
+    /// This succeeds if and only if the given value is strictly less than the
+    /// prime modulus of the group.
+    fn from(number: u32) -> Self {
+        BigUint::from(number).into()
+    }
+}
+
+impl From<u32> for Exponent {
+    /// This succeeds if and only if the given value is strictly less than the
+    /// prime modulus of the group *minus one*.
+    fn from(number: u32) -> Self {
+        BigUint::from(number).into()
     }
 }
 

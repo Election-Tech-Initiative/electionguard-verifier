@@ -16,14 +16,13 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::schnorr;
-use crate::crypto::elgamal::Group;
-use crate::crypto::hash::hash_uuu;
+use crate::crypto::hash::hash_uee;
+use crate::crypto::group::Element;
 
 #[derive(Serialize, Deserialize)]
 pub struct PublicKey {
     /// An ElGamal public key.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    public_key: BigUint,
+    public_key: Element,
 
     /// A proof of posession of the private key.
     proof: schnorr::Proof,
@@ -35,12 +34,11 @@ pub struct Status {
 }
 
 impl PublicKey {
-    pub fn check(&self, group: &Group, extended_base_hash: &BigUint) -> Status {
+    pub fn check(&self, extended_base_hash: &BigUint) -> Status {
         Status {
             proof: self.proof.check(
-                group,
                 &self.public_key,
-                |key, comm| hash_uuu(extended_base_hash, key, comm),
+                |key, comm| hash_uee(extended_base_hash, key, comm),
             ),
         }
     }

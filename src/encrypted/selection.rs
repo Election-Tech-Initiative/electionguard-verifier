@@ -1,9 +1,10 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::elgamal::{self, Group};
+use crate::crypto::elgamal;
 use crate::crypto::chaum_pederson;
 use crate::crypto::hash::hash_umcc;
+use crate::crypto::group::Element;
 
 /// A single selection in a contest, which contains the encrypted
 /// value of the selection (zero or one), as well as a zero-knowledge
@@ -29,14 +30,12 @@ pub struct Status {
 impl Selection {
     pub fn check<'a>(
         &'a self,
-        group: &'a Group,
-        public_key: &'a BigUint,
+        public_key: &'a Element,
         extended_base_hash: &'a BigUint,
     ) -> Status {
 
         Status {
             proof: self.proof.check_zero_one(
-               group,
                public_key,
                &self.message,
                |msg, comm0, comm1| hash_umcc(extended_base_hash, msg, comm0, comm1),

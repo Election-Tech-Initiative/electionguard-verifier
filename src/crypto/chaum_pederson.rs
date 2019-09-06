@@ -1,9 +1,9 @@
 use num::BigUint;
+use num::traits::Pow;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::elgamal::{Group, Message};
-use crate::crypto::group;
-use crate::mod_arith2::*;
+use crate::crypto::elgamal::Message;
+use crate::crypto::group::{Element, Exponent, generator};
 
 pub mod disj;
 
@@ -33,10 +33,8 @@ pub mod disj;
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Proof {
     pub committment: Message,
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    pub challenge: BigUint,
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    pub response: BigUint,
+    pub challenge: Exponent,
+    pub response: Exponent,
 }
 
 /// The result of checking proof validity.
@@ -58,14 +56,12 @@ impl Proof {
     /// Use this `Proof` to establish that `message` is an encryption of zero under `public_key`.
     pub fn check_zero(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Status {
-        let challenge_ok = self.challenge == gen_challenge(message, &self.committment);
+        let challenge_ok = self.challenge == gen_challenge(message, &self.committment).into();
         let response_status = self.transcript_zero(
-            group,
             public_key,
             message,
         );
@@ -78,13 +74,11 @@ impl Proof {
     /// Check validity of this transcript for proving that `message` is an encryption of zero.
     pub fn transcript_zero(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
     ) -> ResponseStatus {
         // Unpack inputs, using the names from the crypto documentation.
-        let p = &group.prime;
-        let g = &group.generator;
+        let g = generator();
         let h = public_key;
         let a = &message.public_key;
         let b = &message.ciphertext;
@@ -95,8 +89,8 @@ impl Proof {
 
         // "The verifier accepts if g^u = α ⋅ a^c, like they would for a Schnorr proof, but they
         // also check that h^u = β ⋅ b^c."
-        let alpha_ok = g.modpow(u, p) == alpha * a.modpow(c, p) % p;
-        let beta_ok = h.modpow(u, p) == beta * b.modpow(c, p) % p;
+        let alpha_ok = g.pow(u) == alpha * &a.pow(c);
+        let beta_ok = h.pow(u) == beta * &b.pow(c);
 
         ResponseStatus {
             public_key: alpha_ok,
@@ -108,36 +102,34 @@ impl Proof {
     /// `one_time_secret` key that was used to construct `message`.  The callback `gen_challenge`
     /// is used to generate a challenge given the message and commitment.
     pub fn prove_zero(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
-        one_time_secret: &BigUint,
-        one_time_exponent: &BigUint,
+        one_time_secret: &Exponent,
+        one_time_exponent: &Exponent,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Proof {
-        let p = &group.prime;
-        let g = &group.generator;
+        let g = generator();
         let h = public_key;
         let r = one_time_secret;
         let t = one_time_exponent;
 
         // "we publish the pair (α, β) = (g^t, h^t)."
-        let alpha = g.modpow(t, p);
-        let beta = h.modpow(t, p);
+        let alpha = g.pow(t);
+        let beta = h.pow(t);
 
         let commitment = Message {
             public_key: alpha,
             ciphertext: beta,
         };
-        let challenge = gen_challenge(message, &commitment);
-
+        let challenge = gen_challenge(message, &commitment).into();
         let c = &challenge;
+
         // "We response with u = t + cr like we would if this were a Schnorr proof for posession of
         // r."
         // (From the Schnorr proof section, which uses different notation:) "The prover responds to
         // the challenge with u = r + cs (mod p - 1), where s is the secret key they're trying to
         // show that they know."
-        let u = (t + c * r) % &(p - 1_u8);
+        let u = t + &(c * r);
 
         Proof {
             committment: commitment,
@@ -150,14 +142,12 @@ impl Proof {
     /// `response`, it constructs a valid-seeming proof that `message` is an encryption of zero,
     /// regardless of the actual value of `message`.
     pub fn simulate_zero(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
-        challenge: &BigUint,
-        response: &BigUint,
+        challenge: &Exponent,
+        response: &Exponent,
     ) -> Proof {
-        let p = &group.prime;
-        let g = &group.generator;
+        let g = generator();
         let h = public_key;
         let a = &message.public_key;
         let b = &message.ciphertext;
@@ -165,12 +155,12 @@ impl Proof {
         let u = response;
 
         // Our goal is to compute alpha and beta such that:
-        //      g.modpow(u, p) == alpha * a.modpow(c, p) % p;
-        //      h.modpow(u, p) == beta * b.modpow(c, p) % p;
+        //      g.pow(u) == alpha * a.pow(c);
+        //      h.pow(u) == beta * b.pow(c);
         // (From `check_zero`.)
 
-        let alpha = g.modpow(u, p) * mod_inv(&a.modpow(c, p), p) % p;
-        let beta = h.modpow(u, p) * mod_inv(&b.modpow(c, p), p) % p;
+        let alpha = g.pow(u) / a.pow(c);
+        let beta = h.pow(u) / b.pow(c);
 
         Proof {
             committment: Message {
@@ -186,54 +176,48 @@ impl Proof {
     /// Use this `Proof` to establish that `message1` is equal to `message2`.
     pub fn check_equal(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message1: &Message,
         message2: &Message,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Status {
         // Check that the decryptions of `message1` and `message2` are equal by proving that their
         // difference is zero.
-        let combined_message = message1.h_sub(message2, group);
-        self.check_zero(group, public_key, &combined_message, gen_challenge)
+        let combined_message = message1.h_sub(message2);
+        self.check_zero(public_key, &combined_message, gen_challenge)
     }
 
     /// Check validity of this transcript for proving that `message1` is equal to `message2`.
     pub fn transcript_equal(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message1: &Message,
         message2: &Message,
     ) -> ResponseStatus {
         // Check that the decryptions of `message1` and `message2` are equal by proving that their
         // difference is zero.
-        let combined_message = message1.h_sub(message2, group);
-        self.transcript_zero(group, public_key, &combined_message)
+        let combined_message = message1.h_sub(message2);
+        self.transcript_zero(public_key, &combined_message)
     }
 
     /// Construct a proof that `message1` and `message2` are encryptions of the same value.
     pub fn prove_equal(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message1: &Message,
-        one_time_secret1: &BigUint,
+        one_time_secret1: &Exponent,
         message2: &Message,
-        one_time_secret2: &BigUint,
-        one_time_exponent: &BigUint,
+        one_time_secret2: &Exponent,
+        one_time_exponent: &Exponent,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Proof {
-        let p = &group.prime;
-
         // Check that the decryptions of `message1` and `message2` are equal by proving that their
         // difference is zero.
-        let combined_message = message1.h_sub(message2, group);
+        let combined_message = message1.h_sub(message2);
 
         // Combining messages also combines their one-time secret keys in the same way.
-        let combined_one_time_secret = mod_sub(one_time_secret1, one_time_secret2, &(p - 1_u8));
+        let combined_one_time_secret = one_time_secret1 - one_time_secret2;
 
         Self::prove_zero(
-            group,
             public_key,
             &combined_message,
             &combined_one_time_secret,
@@ -247,16 +231,14 @@ impl Proof {
     /// encryptions of the same value, regardless of the actual values of `message1` and
     /// `message2`.
     pub fn simulate_equal(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message1: &Message,
         message2: &Message,
-        challenge: &BigUint,
-        response: &BigUint,
+        challenge: &Exponent,
+        response: &Exponent,
     ) -> Proof {
-        let combined_message = message1.h_sub(message2, group);
+        let combined_message = message1.h_sub(message2);
         Self::simulate_zero(
-            group,
             public_key,
             &combined_message,
             challenge,
@@ -268,8 +250,7 @@ impl Proof {
     /// Use this `Proof` to establish that `message` is an encryption of `plaintext`.
     pub fn check_plaintext(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
         plaintext: &BigUint,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
@@ -278,22 +259,20 @@ impl Proof {
         // to hide the value of `plaintext`, the value of the one-time "secret" doesn't matter - it
         // only needs to match the secret used to construct the proof (`prove_plaintext`), so that
         // the `encrypted_plaintext` is equal in both places.
-        let plaintext_one_time_secret = 0_u8.into();
+        let plaintext_one_time_secret = 0_u32.into();
         let encrypted_plaintext = Message::encrypt(
-            group,
             public_key,
             plaintext,
             &plaintext_one_time_secret,
         );
-        self.check_equal(group, public_key, message, &encrypted_plaintext, gen_challenge)
+        self.check_equal(public_key, message, &encrypted_plaintext, gen_challenge)
     }
 
     /// Check validity of this transcript for proving that `message` is an encryption of
     /// `plaintext`.
     pub fn transcript_plaintext(
         &self,
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
         plaintext: &BigUint,
     ) -> ResponseStatus {
@@ -301,36 +280,32 @@ impl Proof {
         // to hide the value of `plaintext`, the value of the one-time "secret" doesn't matter - it
         // only needs to match the secret used to construct the proof (`prove_plaintext`), so that
         // the `encrypted_plaintext` is equal in both places.
-        let plaintext_one_time_secret = 0_u8.into();
+        let plaintext_one_time_secret = 0_u32.into();
         let encrypted_plaintext = Message::encrypt(
-            group,
             public_key,
             plaintext,
             &plaintext_one_time_secret,
         );
-        self.transcript_equal(group, public_key, message, &encrypted_plaintext)
+        self.transcript_equal(public_key, message, &encrypted_plaintext)
     }
 
     /// Construct a proof that `message` is an encryption of `plaintext`.
     pub fn prove_plaintext(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
-        one_time_secret: &BigUint,
+        one_time_secret: &Exponent,
         plaintext: &BigUint,
-        one_time_exponent: &BigUint,
+        one_time_exponent: &Exponent,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Proof {
         // This must match the `plaintext_one_time_secret` in `check_plaintext`.
-        let plaintext_one_time_secret = 0_u8.into();
+        let plaintext_one_time_secret = 0_u32.into();
         let encrypted_plaintext = Message::encrypt(
-            group,
             public_key,
             plaintext,
             &plaintext_one_time_secret,
         );
         Self::prove_equal(
-            group,
             public_key,
             message,
             one_time_secret,
@@ -345,23 +320,20 @@ impl Proof {
     /// `response`, it constructs a valid-seeming proof that `message` is an encryption of
     /// `plaintext`, regardless of the actual values of `message` and `plaintext`.
     pub fn simulate_plaintext(
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         message: &Message,
         plaintext: &BigUint,
-        challenge: &BigUint,
-        response: &BigUint,
+        challenge: &Exponent,
+        response: &Exponent,
     ) -> Proof {
         // This must match the `plaintext_one_time_secret` in `check_plaintext`.
-        let plaintext_one_time_secret = 0_u8.into();
+        let plaintext_one_time_secret = 0_u32.into();
         let encrypted_plaintext = Message::encrypt(
-            group,
             public_key,
             plaintext,
             &plaintext_one_time_secret,
         );
         Self::simulate_equal(
-            group,
             public_key,
             message,
             &encrypted_plaintext,
@@ -375,15 +347,13 @@ impl Proof {
     /// secret key corresponding to `public_key`.
     pub fn check_exp(
         &self,
-        group: &Group,
-        public_key: &BigUint,
-        base: &BigUint,
-        result: &BigUint,
+        public_key: &Element,
+        base: &Element,
+        result: &Element,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Status {
         // See `transcript_exp` for explanation.
         self.check_zero(
-            group,
             base,
             &Message {
                 public_key: public_key.clone(),
@@ -397,10 +367,9 @@ impl Proof {
     /// `secret_key` is the secret key corresponding to `public_key`.
     pub fn transcript_exp(
         &self,
-        group: &Group,
-        public_key: &BigUint,
-        base: &BigUint,
-        result: &BigUint,
+        public_key: &Element,
+        base: &Element,
+        result: &Element,
     ) -> ResponseStatus {
         // From the ElectionGuard spec:
         //
@@ -419,7 +388,6 @@ impl Proof {
         // under (s, h) is the same as proving that `b = a^s`.
 
         self.transcript_zero(
-            group,
             base,
             &Message {
                 public_key: public_key.clone(),
@@ -431,18 +399,16 @@ impl Proof {
     /// Construct a proof that `result = base^secret_key`, where `secret_key` is the secret key
     /// corresponding to `public_key`.
     pub fn prove_exp(
-        group: &Group,
-        public_key: &BigUint,
-        secret_key: &BigUint,
-        base: &BigUint,
-        result: &BigUint,
-        one_time_exponent: &BigUint,
+        public_key: &Element,
+        secret_key: &Exponent,
+        base: &Element,
+        result: &Element,
+        one_time_exponent: &Exponent,
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Proof {
         // See `transcript_exp` for explanation.  In that formulation, it turns out the long-term
         // secret key is the equivalent of the "one-time secret" used to encrypt the zero message.
         Self::prove_zero(
-            group,
             base,
             &Message {
                 public_key: public_key.clone(),
@@ -458,16 +424,14 @@ impl Proof {
     /// `response`, it constructs a valid-seeming proof that `result = base^secret_key`, where
     /// `secret_key` is the secret key corresponding to `public_key`.
     pub fn simulate_exp(
-        group: &Group,
-        public_key: &BigUint,
-        base: &BigUint,
-        result: &BigUint,
-        challenge: &BigUint,
-        response: &BigUint,
+        public_key: &Element,
+        base: &Element,
+        result: &Element,
+        challenge: &Exponent,
+        response: &Exponent,
     ) -> Proof {
         // See `transcript_exp` for explanation.
         Self::simulate_zero(
-            group,
             base,
             &Message {
                 public_key: public_key.clone(),
@@ -495,22 +459,22 @@ impl ResponseStatus {
 #[cfg(test)]
 mod test {
     use num::BigUint;
+    use num::traits::Pow;
     use crate::crypto::elgamal::{self, Message};
+    use crate::crypto::group::{Element, Exponent, generator, prime};
     use crate::crypto::hash::hash_umc;
     use super::Proof;
 
     /// Encrypt a zero, construct a Chaum-Pederson proof that it's zero, and check the proof.
     #[test]
     fn prove_check_zero() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let one_time_secret = 2140_u32.into();
-        let message = Message::encrypt(&group, &public_key, &0_u8.into(), &one_time_secret);
+        let message = Message::encrypt(&public_key, &0_u32.into(), &one_time_secret);
         let one_time_exponent = 3048_u32.into();
         let proof = Proof::prove_zero(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -519,7 +483,6 @@ mod test {
         );
 
         let status = proof.check_zero(
-            &group,
             &public_key,
             &message,
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
@@ -533,15 +496,13 @@ mod test {
     #[test]
     #[should_panic]
     fn prove_check_zero_fail() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let one_time_secret = 2140_u32.into();
-        let message = Message::encrypt(&group, &public_key, &1_u8.into(), &one_time_secret);
+        let message = Message::encrypt(&public_key, &1_u32.into(), &one_time_secret);
         let one_time_exponent = 3048_u32.into();
         let proof = Proof::prove_zero(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -550,7 +511,6 @@ mod test {
         );
 
         let status = proof.check_zero(
-            &group,
             &public_key,
             &message,
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
@@ -563,15 +523,13 @@ mod test {
     /// This lets us check that we have the right modulus (p vs. p - 1) in certain places.
     #[test]
     fn prove_check_zero_extreme_nonce() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
-        let one_time_secret = &group.prime - 2_u8;
-        let message = Message::encrypt(&group, &public_key, &0_u8.into(), &one_time_secret);
+        let one_time_secret = (prime() - 2_u32).into();
+        let message = Message::encrypt(&public_key, &0_u32.into(), &one_time_secret);
         let one_time_exponent = 3048_u32.into();
         let proof = Proof::prove_zero(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -580,7 +538,6 @@ mod test {
         );
 
         let status = proof.check_zero(
-            &group,
             &public_key,
             &message,
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
@@ -593,19 +550,17 @@ mod test {
     /// the proof.
     #[test]
     fn prove_check_equal() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 30712_u32.into();
         let one_time_secret1 = 20147_u32.into();
-        let message1 = Message::encrypt(&group, &public_key, &value, &one_time_secret1);
+        let message1 = Message::encrypt(&public_key, &value, &one_time_secret1);
         let one_time_secret2 = 7494_u32.into();
-        let message2 = Message::encrypt(&group, &public_key, &value, &one_time_secret2);
+        let message2 = Message::encrypt(&public_key, &value, &one_time_secret2);
         let one_time_exponent = 9195_u32.into();
 
         let proof = Proof::prove_equal(
-            &group,
             &public_key,
             &message1,
             &one_time_secret1,
@@ -616,7 +571,6 @@ mod test {
         );
 
         let status = proof.check_equal(
-            &group,
             &public_key,
             &message1,
             &message2,
@@ -631,20 +585,18 @@ mod test {
     #[test]
     #[should_panic]
     fn prove_check_equal_fail() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value1 = 30712_u32.into();
         let one_time_secret1 = 20147_u32.into();
-        let message1 = Message::encrypt(&group, &public_key, &value1, &one_time_secret1);
+        let message1 = Message::encrypt(&public_key, &value1, &one_time_secret1);
         let value2 = 2471_u32.into();
         let one_time_secret2 = 7494_u32.into();
-        let message2 = Message::encrypt(&group, &public_key, &value2, &one_time_secret2);
+        let message2 = Message::encrypt(&public_key, &value2, &one_time_secret2);
         let one_time_exponent = 9195_u32.into();
 
         let proof = Proof::prove_equal(
-            &group,
             &public_key,
             &message1,
             &one_time_secret1,
@@ -655,7 +607,6 @@ mod test {
         );
 
         let status = proof.check_equal(
-            &group,
             &public_key,
             &message1,
             &message2,
@@ -669,19 +620,17 @@ mod test {
     /// This lets us check that we have the right modulus (p vs. p - 1) in certain places.
     #[test]
     fn prove_check_equal_extreme_nonce() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 30712_u32.into();
         let one_time_secret1 = 7494_u32.into();
-        let message1 = Message::encrypt(&group, &public_key, &value, &one_time_secret1);
-        let one_time_secret2 = &group.prime - 2_u8;
-        let message2 = Message::encrypt(&group, &public_key, &value, &one_time_secret2);
+        let message1 = Message::encrypt(&public_key, &value, &one_time_secret1);
+        let one_time_secret2 = (prime() - 2_u32).into();
+        let message2 = Message::encrypt(&public_key, &value, &one_time_secret2);
         let one_time_exponent = 9195_u32.into();
 
         let proof = Proof::prove_equal(
-            &group,
             &public_key,
             &message1,
             &one_time_secret1,
@@ -692,7 +641,6 @@ mod test {
         );
 
         let status = proof.check_equal(
-            &group,
             &public_key,
             &message1,
             &message2,
@@ -706,16 +654,14 @@ mod test {
     /// Encrypt a value, construct a Chaum-Pederson proof that it's that value, and check the proof.
     #[test]
     fn prove_check_plaintext() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 11935_u32.into();
         let one_time_secret = 13797_u32.into();
-        let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+        let message = Message::encrypt(&public_key, &value, &one_time_secret);
         let one_time_exponent = 30612_u32.into();
         let proof = Proof::prove_plaintext(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -725,7 +671,6 @@ mod test {
         );
 
         let status = proof.check_plaintext(
-            &group,
             &public_key,
             &message,
             &value,
@@ -740,17 +685,15 @@ mod test {
     #[test]
     #[should_panic]
     fn prove_check_plaintext_fail() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 11935_u32.into();
         let other_value = 1609_u32.into();
         let one_time_secret = 13797_u32.into();
-        let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+        let message = Message::encrypt(&public_key, &value, &one_time_secret);
         let one_time_exponent = 30612_u32.into();
         let proof = Proof::prove_plaintext(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -760,7 +703,6 @@ mod test {
         );
 
         let status = proof.check_plaintext(
-            &group,
             &public_key,
             &message,
             &other_value,
@@ -774,16 +716,14 @@ mod test {
     /// encryption.  This lets us check that we have the right modulus (p vs. p - 1) in certain places.
     #[test]
     fn prove_check_plaintext_extreme_nonce() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let value = 11935_u32.into();
-        let one_time_secret = &group.prime - 2_u8;
-        let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+        let one_time_secret = (prime() - 2_u32).into();
+        let message = Message::encrypt(&public_key, &value, &one_time_secret);
         let one_time_exponent = 30612_u32.into();
         let proof = Proof::prove_plaintext(
-            &group,
             &public_key,
             &message,
             &one_time_secret,
@@ -793,7 +733,6 @@ mod test {
         );
 
         let status = proof.check_plaintext(
-            &group,
             &public_key,
             &message,
             &value,
@@ -808,17 +747,15 @@ mod test {
     /// exponentiation was done correctly, and check the proof.
     #[test]
     fn prove_check_exp() {
-        let group = elgamal::test::group();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let secret_key = 22757_u32.into();
-        let public_key = group.public_key(&secret_key);
+        let public_key = generator().pow(&secret_key);
 
-        let base: BigUint = 1033_u32.into();
-        let result = base.modpow(&secret_key, &group.prime);
+        let base: Element = 1033_u32.into();
+        let result = base.pow(&secret_key);
         let one_time_exponent = 26480_u32.into();
         let proof = Proof::prove_exp(
-            &group,
             &public_key,
             &secret_key,
             &base,
@@ -828,7 +765,6 @@ mod test {
         );
 
         let status = proof.check_exp(
-            &group,
             &public_key,
             &base,
             &result,
@@ -844,18 +780,16 @@ mod test {
     #[test]
     #[should_panic]
     fn prove_check_exp_fail() {
-        let group = elgamal::test::group();
         let extended_base_hash = elgamal::test::extended_base_hash();
 
         let secret_key = 22757_u32.into();
-        let public_key = group.public_key(&secret_key);
-        let other_exponent = 19315_u32.into();
+        let public_key = generator().pow(&secret_key);
+        let other_exponent: Exponent = 19315_u32.into();
 
-        let base: BigUint = 1033_u32.into();
-        let result = base.modpow(&other_exponent, &group.prime);
+        let base: Element = 1033_u32.into();
+        let result = base.pow(&other_exponent);
         let one_time_exponent = 26480_u32.into();
         let proof = Proof::prove_exp(
-            &group,
             &public_key,
             &secret_key,
             &base,
@@ -865,7 +799,6 @@ mod test {
         );
 
         let status = proof.check_exp(
-            &group,
             &public_key,
             &base,
             &result,
@@ -880,16 +813,14 @@ mod test {
     /// and check the proof (which should pass).
     #[test]
     fn simulate_transcript_zero() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
 
         let value = 16351_u32.into();
         let one_time_secret = 18328_u32.into();
-        let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+        let message = Message::encrypt(&public_key, &value, &one_time_secret);
         let challenge = 11947_u32.into();
         let response = 30170_u32.into();
         let proof = Proof::simulate_zero(
-            &group,
             &public_key,
             &message,
             &challenge,
@@ -897,7 +828,6 @@ mod test {
         );
 
         let status = proof.transcript_zero(
-            &group,
             &public_key,
             &message,
         );
@@ -909,19 +839,17 @@ mod test {
     /// and check the proof (which should pass).
     #[test]
     fn simulate_transcript_equal() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
 
         let value1 = 16941_u32.into();
         let one_time_secret1 = 14409_u32.into();
-        let message1 = Message::encrypt(&group, &public_key, &value1, &one_time_secret1);
+        let message1 = Message::encrypt(&public_key, &value1, &one_time_secret1);
         let value2 = 20440_u32.into();
         let one_time_secret2 = 15529_u32.into();
-        let message2 = Message::encrypt(&group, &public_key, &value2, &one_time_secret2);
+        let message2 = Message::encrypt(&public_key, &value2, &one_time_secret2);
         let challenge = 2563_u32.into();
         let response = 4492_u32.into();
         let proof = Proof::simulate_equal(
-            &group,
             &public_key,
             &message1,
             &message2,
@@ -930,7 +858,6 @@ mod test {
         );
 
         let status = proof.transcript_equal(
-            &group,
             &public_key,
             &message1,
             &message2,
@@ -943,17 +870,15 @@ mod test {
     /// and check the proof (which should pass).
     #[test]
     fn simulate_transcript_plaintext() {
-        let group = elgamal::test::group();
         let public_key = elgamal::test::public_key();
 
         let value = 15271_u32.into();
         let one_time_secret = 482_u32.into();
-        let message = Message::encrypt(&group, &public_key, &value, &one_time_secret);
+        let message = Message::encrypt(&public_key, &value, &one_time_secret);
         let plaintext = 8049_u32.into();
         let challenge = 8508_u32.into();
         let response = 23843_u32.into();
         let proof = Proof::simulate_plaintext(
-            &group,
             &public_key,
             &message,
             &plaintext,
@@ -962,7 +887,6 @@ mod test {
         );
 
         let status = proof.transcript_plaintext(
-            &group,
             &public_key,
             &message,
             &plaintext,
@@ -975,17 +899,14 @@ mod test {
     /// (which should pass).
     #[test]
     fn simulate_transcript_exp() {
-        let group = elgamal::test::group();
-
         let public_key = 31195_u32.into();
-        let other_exponent = 19315_u32.into();
+        let other_exponent: Exponent = 19315_u32.into();
 
-        let base: BigUint = 1033_u32.into();
-        let result = base.modpow(&other_exponent, &group.prime);
+        let base: Element = 1033_u32.into();
+        let result = base.pow(&other_exponent);
         let challenge = 15848_u32.into();
         let response = 12460_u32.into();
         let proof = Proof::simulate_exp(
-            &group,
             &public_key,
             &base,
             &result,
@@ -994,7 +915,6 @@ mod test {
         );
 
         let status = proof.transcript_exp(
-            &group,
             &public_key,
             &base,
             &result,

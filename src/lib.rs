@@ -4,8 +4,6 @@ pub mod decryption;
 pub mod deserialize;
 pub mod election;
 pub mod encrypted;
-pub mod mod_arith;
-pub mod mod_arith2;
 pub mod trustee;
 pub mod check;
 pub mod schema;

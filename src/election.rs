@@ -1,7 +1,8 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::elgamal::{self, Group};
+use crate::crypto::elgamal;
+use crate::crypto::group::{Element, Exponent};
 use crate::decryption;
 use crate::encrypted;
 use crate::trustee;
@@ -25,8 +26,12 @@ pub struct Parameters {
     #[serde(deserialize_with = "crate::deserialize::biguint")]
     threshold: BigUint,
 
-    #[serde(flatten)]
-    group: elgamal::Group,
+    /// The prime modulus of the group used for encryption.
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    prime: BigUint,
+
+    /// The generator of the group used for encryption.
+    generator: Element,
 }
 
 /// All data from an ElectionGuard election
@@ -51,8 +56,7 @@ pub struct Record {
     extended_base_hash: BigUint,
 
     /// The election public key `K`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
-    joint_public_key: BigUint,
+    joint_public_key: Element,
 
     parameters: Parameters,
 
@@ -77,12 +81,10 @@ impl Record {
         Status {
             trustee_public_keys: Self::check_trustee_public_keys(
                 &self.trustee_public_keys,
-                &self.parameters.group,
                 &self.extended_base_hash,
             ),
             cast_ballots: Self::check_cast_ballots(
                 &self.cast_ballots,
-                &self.parameters.group,
                 &self.joint_public_key,
                 &self.extended_base_hash,
             ),
@@ -91,13 +93,12 @@ impl Record {
 
     fn check_trustee_public_keys(
         keys: &[Vec<PublicKey>],
-        group: &Group,
         extended_base_hash: &BigUint,
     ) -> Vec<Vec<trustee::public_key::Status>> {
         keys.iter()
             .map(|keys| {
                 keys.iter()
-                    .map(|key| key.check(group, extended_base_hash))
+                    .map(|key| key.check(extended_base_hash))
                     .collect()
             })
             .collect()
@@ -105,13 +106,12 @@ impl Record {
 
     fn check_cast_ballots(
         ballots: &[encrypted::ballot::Ballot],
-        group: &Group,
-        public_key: &BigUint,
+        public_key: &Element,
         extended_base_hash: &BigUint,
     ) -> Vec<encrypted::ballot::Status> {
         ballots
             .iter()
-            .map(|ballot| ballot.check(group, public_key, extended_base_hash))
+            .map(|ballot| ballot.check(public_key, extended_base_hash))
             .collect()
     }
 }
