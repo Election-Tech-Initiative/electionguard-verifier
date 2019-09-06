@@ -26,12 +26,21 @@ pub struct Election {
     pub parameters: schema::Parameters,
     pub cast_ballots: Vec<Ballot>,
     pub spoiled_ballots: Vec<Ballot>,
+    /// Indicates which of the trustees should be considered present at decryption time.
+    pub trustees_present: Vec<bool>,
 }
 
 #[derive(Clone, Default)]
 pub struct TrusteeSecrets {
-    pub secret_keys: Vec<Exponent>,
-    pub shares: Vec<Element>,
+    secret_keys: Vec<Exponent>,
+    shares: Vec<Element>,
+}
+
+pub struct TrusteeInfo<'a> {
+    num: usize,
+    secrets: &'a [TrusteeSecrets],
+    public_keys: &'a [schema::TrusteePublicKey],
+    present: &'a [bool],
 }
 
 
@@ -39,6 +48,9 @@ pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
     let threshold = e.parameters.threshold.to_usize().unwrap();
     let num_trustees = e.parameters.num_trustees.to_usize().unwrap();
     let g = generator();
+
+
+    // Setup phase
 
     let base_hash = check::compute_base_hash(&e.parameters);
 
@@ -49,6 +61,9 @@ pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
 
     let extended_base_hash = check::compute_extended_base_hash(&base_hash, &trustee_public_keys);
 
+
+    // Voting phase
+
     let cast_ballots = e.cast_ballots.iter().map(|b| generate_cast_ballot(
         rng,
         &joint_public_key,
@@ -56,17 +71,37 @@ pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
         b,
     )).collect::<Vec<_>>();
 
+    // A `CastBallot` for each spoiled ballot.  These will be turned into `SpoiledBallots` during
+    // decryption.
+    let spoiled_cast_ballots = e.spoiled_ballots.iter().map(|b| generate_cast_ballot(
+        rng,
+        &joint_public_key,
+        &extended_base_hash,
+        b,
+    )).collect::<Vec<_>>();
+
+
+    // Decryption phase
+
+    assert!(e.trustees_present.len() == num_trustees);
+
+    let trustee_info = TrusteeInfo {
+        num: num_trustees,
+        secrets: &trustee_secrets,
+        public_keys: &trustee_public_keys,
+        present: &e.trustees_present,
+    };
+
     let contest_tallies = generate_contest_tallies(
         rng,
-        &trustee_secrets,
+        &trustee_info,
         &extended_base_hash,
         &cast_ballots,
     );
 
-    let spoiled_ballots = e.spoiled_ballots.iter().map(|b| generate_spoiled_ballot(
+    let spoiled_ballots = spoiled_cast_ballots.into_iter().map(|b| generate_spoiled_ballot(
         rng,
-        &trustee_secrets,
-        &joint_public_key,
+        &trustee_info,
         &extended_base_hash,
         b,
     )).collect::<Vec<_>>();
@@ -218,7 +253,7 @@ pub fn generate_cast_ballot(
             selection_sum_secret = &selection_sum_secret + ss;
         }
 
-        // TODO: currently hardcoded
+        // TODO: max_selections is currently hardcoded
         let max_selections = BigUint::one();
         let num_selections_proof = chaum_pederson::Proof::prove_plaintext(
             joint_public_key,
@@ -244,7 +279,7 @@ pub fn generate_cast_ballot(
 
 pub fn generate_contest_tallies(
     rng: &mut impl Rng,
-    trustee_secrets: &[TrusteeSecrets],
+    trustee_info: &TrusteeInfo,
     extended_base_hash: &BigUint,
     cast_ballots: &[schema::CastBallot],
 ) -> Vec<schema::ContestTally> {
@@ -264,7 +299,7 @@ pub fn generate_contest_tallies(
             let tally = check::compute_encrypted_tally(cast_ballots, i, j);
             let value = generate_decrypted_value(
                 rng,
-                trustee_secrets,
+                trustee_info,
                 extended_base_hash,
                 tally,
             );
@@ -282,20 +317,17 @@ pub fn generate_contest_tallies(
 
 pub fn generate_spoiled_ballot(
     rng: &mut impl Rng,
-    trustee_secrets: &[TrusteeSecrets],
-    joint_public_key: &Element,
+    trustee_info: &TrusteeInfo,
     extended_base_hash: &BigUint,
-    b: &Ballot,
+    cast: schema::CastBallot,
 ) -> schema::SpoiledBallot {
-    let cast = generate_cast_ballot(rng, joint_public_key, extended_base_hash, b);
-
     let mut contests = Vec::with_capacity(cast.contests.len());
     for c in cast.contests {
         let mut selections = Vec::with_capacity(c.selections.len());
         for s in c.selections {
             let value = generate_decrypted_value(
                 rng,
-                trustee_secrets,
+                trustee_info,
                 extended_base_hash,
                 s.message,
             );
@@ -316,17 +348,60 @@ pub fn generate_spoiled_ballot(
 
 pub fn generate_decrypted_value(
     rng: &mut impl Rng,
-    trustee_secrets: &[TrusteeSecrets],
+    trustees: &TrusteeInfo,
     extended_base_hash: &BigUint,
     message: Message,
 ) -> schema::DecryptedValue {
-    // TODO
-    schema::DecryptedValue {
-        cleartext: BigUint::zero(),
-        decrypted_value: Element::one(),
-        encrypted_value: message,
-        shares: Vec::new(),
+    let num_trustees = trustees.num;
+
+    // Build trustee shares M_i
+    let mut shares = Vec::with_capacity(num_trustees);
+    let A = &message.public_key;
+    for i in 0 .. num_trustees {
+        assert!(trustees.present[i]); // TODO - recovery for non-present trustees
+
+        let si = &trustees.secrets[i].secret_keys[0];
+        let Mi = A.pow(si);
+        let Ki = &trustees.public_keys[i].coefficients[0].public_key;
+
+        let proof = chaum_pederson::Proof::prove_exp(
+            &Ki,
+            &si,
+            A,
+            &Mi,
+            &random_exponent(rng),
+            |msg, comm| hash_umc(extended_base_hash, msg, comm),
+        );
+
+        shares.push(schema::Share {
+            recovery: None,
+            proof,
+            share: Mi,
+        });
     }
+
+    let M = &message.ciphertext / &check::compute_share_product(&shares);
+    let t = discrete_log(&M).as_uint().clone();
+
+    schema::DecryptedValue {
+        cleartext: t,
+        decrypted_value: M,
+        encrypted_value: message,
+        shares,
+    }
+}
+
+pub fn discrete_log(element: &Element) -> Exponent {
+    let g_inv = generator().inverse();
+
+    let mut count = Exponent::zero();
+    let mut cur = element.clone();
+    while !cur.is_one() {
+        cur = &cur * &g_inv;
+        count = count + Exponent::one();
+    }
+
+    count
 }
 
 

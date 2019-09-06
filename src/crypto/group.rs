@@ -147,6 +147,17 @@ impl Zero for Exponent {
     }
 }
 
+impl One for Exponent {
+    /// The one exponent
+    fn one() -> Exponent {
+        Exponent::unchecked(BigUint::one())
+    }
+    /// Test if an exponent is one
+    fn is_one(&self) -> bool {
+        self.exponent.is_one()
+    }
+}
+
 impl Add for Exponent {
     type Output = Exponent;
     /// Add group exponents, modulo the group's prime modulus *minus one*.

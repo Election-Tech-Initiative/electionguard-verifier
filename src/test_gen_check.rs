@@ -7,7 +7,7 @@ use crate::crypto::group::{generator, prime};
 use crate::ballot;
 
 #[test]
-#[ignore]
+//#[ignore]
 fn test_normal() {
     let dummy_information = ballot::Information {
         date: "today".to_owned(),
@@ -39,11 +39,21 @@ fn test_normal() {
                 contests: vec![
                     Contest { selections: vec![false, true, false] },
                     Contest { selections: vec![false, false, true] },
+                    Contest { selections: vec![false, false, true] },
+                ],
+            },
+        ],
+        spoiled_ballots: vec![
+            Ballot {
+                information: dummy_information.clone(),
+                contests: vec![
+                    Contest { selections: vec![false, false, true] },
+                    Contest { selections: vec![false, true, false] },
                     Contest { selections: vec![true, false, false] },
                 ],
             },
         ],
-        spoiled_ballots: vec![],
+        trustees_present: vec![true, true, true, true, true],
     };
 
     let record = generate::generate(&mut rand::thread_rng(), e);

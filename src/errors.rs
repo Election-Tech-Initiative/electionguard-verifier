@@ -17,6 +17,12 @@ impl<'a> ErrorContext<'a> {
         }
     }
 
+    pub fn check_get<'b, T>(&mut self, slice: &'b [T], index: usize) -> Option<&'b T> {
+        let val = slice.get(index);
+        self.check(val.is_some(), "index out of range");
+        val
+    }
+
     pub fn scope<'b>(&'b mut self, desc: &str) -> ErrorContext<'b> {
         ErrorContext {
             errs: &mut *self.errs,

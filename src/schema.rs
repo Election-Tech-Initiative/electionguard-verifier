@@ -196,8 +196,7 @@ pub struct Share {
     pub proof: chaum_pederson::Proof,
 
     /// The share of the decrypted message `M_i`.
-    #[serde(with = "crate::serialize::big_uint")]
-    pub share: BigUint,
+    pub share: Element,
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]

@@ -61,7 +61,7 @@ pub fn check_record(errs: &mut ErrorContext, r: &Record) {
 
         for (j, cc) in cb.contests.iter().enumerate() {
             let mut errs = errs.scope(&format!("contest #{}", j));
-            if let Some(ct) = r.contest_tallies.get(j) {
+            if let Some(ct) = errs.check_get(&r.contest_tallies, j) {
                 errs.check(cc.selections.len() == ct.selections.len(),
                     "wrong number of selections for contest");
             }
@@ -107,7 +107,7 @@ pub fn check_record(errs: &mut ErrorContext, r: &Record) {
 
         for (j, sc) in sb.contests.iter().enumerate() {
             let mut errs = errs.scope(&format!("contest #{}", j));
-            if let Some(ct) = r.contest_tallies.get(j) {
+            if let Some(ct) = errs.check_get(&r.contest_tallies, j) {
                 errs.check(sc.selections.len() == ct.selections.len(),
                     "wrong number of selections for contest");
             }
@@ -135,7 +135,9 @@ fn check_decrypted_value(errs: &mut ErrorContext, r: &Record, dv: &DecryptedValu
     errs.check(dv.decrypted_value == generator().pow(&dv.cleartext),
         "decrypted value does not match cleartext");
 
-    errs.check(false, "TODO: encrypted_value decrypts to decrypted_value");
+    errs.check(dv.decrypted_value ==
+        &dv.encrypted_value.ciphertext / &compute_share_product(&dv.shares),
+        "decrypted value was not computed correctly");
 
     for (i, s) in dv.shares.iter().enumerate() {
         if let Some(ref sr) = s.recovery {
@@ -147,7 +149,16 @@ fn check_decrypted_value(errs: &mut ErrorContext, r: &Record, dv: &DecryptedValu
             errs.check(false, "TODO: fragments are assembled correctly");
         }
 
-        errs.check(false, "TODO: proof");  // TODO: proof
+        if let Some(tpk) = errs.check_get(&r.trustee_public_keys, i) {
+            if let Some(c) = errs.check_get(&tpk.coefficients, 0) {
+                errs.check(s.proof.check_exp(
+                    &c.public_key,
+                    &dv.encrypted_value.public_key,
+                    &s.share,
+                    |msg, comm| hash_umc(&r.extended_base_hash, msg, comm),
+                ).is_ok(), "invalid Chaum-Pedersen proof of correct share computation");
+            }
+        }
     }
 }
 
@@ -212,4 +223,15 @@ pub fn compute_extended_base_hash(
     trustee_public_keys: &[TrusteePublicKey],
 ) -> BigUint {
     BigUint::zero() // TODO
+}
+
+/// Compute the decrypted version of `message.ciphertext`, using the product of the `shares`.
+pub fn compute_share_product(
+    shares: &[Share],
+) -> Element {
+    let mut product = Element::one();
+    for s in shares {
+        product = &product * &s.share;
+    }
+    product
 }
