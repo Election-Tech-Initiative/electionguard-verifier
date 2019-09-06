@@ -8,3 +8,4 @@ pub mod trustee;
 pub mod check;
 pub mod schema;
 pub mod serialize;
+pub mod generate;

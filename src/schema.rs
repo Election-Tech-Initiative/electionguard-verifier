@@ -8,7 +8,7 @@ use crate::crypto::schnorr;
 use crate::crypto::group::{Element, Exponent};
 
 /// All the parameters necessary to form the election.
-#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Parameters {
     /// The date on which the election takes place.
     pub date: String,
@@ -128,12 +128,12 @@ pub struct CastSelection {
 #[serde(transparent)]
 pub struct ContestTally {
     /// The summed tallies for all selections in this contest.
-    pub selections: Vec<DecryptedTally>,
+    pub selections: Vec<SelectionTally>,
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct DecryptedTally {
+pub struct SelectionTally {
     #[serde(serialize_with = "crate::serialize::decrypted_tally::serialize")]
     pub value: DecryptedValue,
 }
@@ -149,12 +149,12 @@ pub struct SpoiledBallot {
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct SpoiledContest {
-    pub selections: Vec<DecryptedSelection>,
+    pub selections: Vec<SpoiledSelection>,
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct DecryptedSelection {
+pub struct SpoiledSelection {
     #[serde(serialize_with = "crate::serialize::decrypted_selection::serialize")]
     pub value: DecryptedValue,
 }

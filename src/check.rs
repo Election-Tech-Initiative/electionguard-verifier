@@ -124,7 +124,7 @@ fn check_decrypted_value(r: &Record, dv: &DecryptedValue) -> bool {
 }
 
 
-fn compute_selection_sum(cast_selections: &[CastSelection]) -> Message {
+pub fn compute_selection_sum(cast_selections: &[CastSelection]) -> Message {
     // (1, 1) is a valid encryption of zero for any key, with zero as the one-time secret.
     let mut sum = Message {
         public_key: Element::one(),
@@ -138,7 +138,7 @@ fn compute_selection_sum(cast_selections: &[CastSelection]) -> Message {
     sum
 }
 
-fn compute_encrypted_tally(
+pub fn compute_encrypted_tally(
     cast_ballots: &[CastBallot],
     contest_index: usize,
     selection_index: usize,
@@ -159,13 +159,13 @@ fn compute_encrypted_tally(
     sum
 }
 
-fn compute_base_hash(
+pub fn compute_base_hash(
     parameters: &Parameters,
 ) -> BigUint {
     BigUint::zero() // TODO
 }
 
-fn compute_joint_public_key(
+pub fn compute_joint_public_key(
     trustee_public_keys: &[TrusteePublicKey],
 ) -> Element {
     let mut product = Element::one();
@@ -179,7 +179,7 @@ fn compute_joint_public_key(
     product
 }
 
-fn compute_extended_base_hash(
+pub fn compute_extended_base_hash(
     base_hash: &BigUint,
     trustee_public_keys: &[TrusteePublicKey],
 ) -> BigUint {
