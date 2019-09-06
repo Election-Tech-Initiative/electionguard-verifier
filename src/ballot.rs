@@ -4,14 +4,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Information {
     /// The date the ballot was encrypted.
-    date: String,
+    pub date: String,
 
     /// Information about the device that encrypted the ballot
-    device_info: String,
+    pub device_info: String,
 
     /// The time the ballot was encrypted.
-    time: String,
+    pub time: String,
 
     /// The tracker code generated for this ballot.
-    tracker: String,
+    pub tracker: String,
 }
