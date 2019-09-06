@@ -1,7 +1,7 @@
 use num::BigUint;
 use num::traits::{Zero, One, Pow};
 
-use crate::crypto::group::{Element, Exponent, generator};
+use crate::crypto::group::{self, Element, Exponent, generator};
 use crate::crypto::elgamal::Message;
 use crate::schema::*;
 use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
@@ -26,7 +26,10 @@ pub fn check_record(errs: &mut ErrorContext, r: &Record) {
         "threshold must be nonzero");
     errs.check(r.parameters.threshold <= r.parameters.num_trustees,
         "threshold must not exceed num_trustees");
-    errs.check(false, "TODO: group check");
+    errs.check(&r.parameters.prime == group::prime(),
+        "election record uses unsupported group modulus");
+    errs.check(&r.parameters.generator == group::generator(),
+        "election record uses unsupported group generator");
 
     // Trustee private keys
 
@@ -40,9 +43,11 @@ pub fn check_record(errs: &mut ErrorContext, r: &Record) {
 
         for (j, tc) in tpk.coefficients.iter().enumerate() {
             let mut errs = errs.scope(&format!("coefficient #{}", j));
+            // Note: this check uses the base hash, not the extended base hash.  The extended hash
+            // isn't computed until after the trustee keys have been generated.
             errs.check(tc.proof.check(
-                &r.joint_public_key,
-                |key, comm| hash_uee(&r.extended_base_hash, key, comm),
+                &tc.public_key,
+                |key, comm| hash_uee(&r.base_hash, key, comm),
             ).is_ok(), "invalid Schnorr proof of key ownership");
         }
     }
@@ -60,7 +65,8 @@ pub fn check_record(errs: &mut ErrorContext, r: &Record) {
                 errs.check(cc.selections.len() == ct.selections.len(),
                     "wrong number of selections for contest");
             }
-            errs.check(false, "TODO: max_selections check");
+            errs.check(cc.max_selections == BigUint::one(),
+                "max_selections is not 1");
 
             for (k, cs) in cc.selections.iter().enumerate() {
                 let mut errs = errs.scope(&format!("selection #{}", k));
