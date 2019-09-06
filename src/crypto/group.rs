@@ -3,23 +3,25 @@ use lazy_static::*;
 use num::traits::{Zero, One, Pow, Num};
 use std::ops::{Mul, Add, Sub, Neg, Div};
 use std::convert::TryFrom;
+use serde::{Serialize, Deserialize};
 
 // TODO: custom serde instances that reject things not in the group
 
 /// An element of the multiplicative group of integers modulo some prime.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Element {
     element: BigUint,
 }
 
 /// An exponent in the additive group of integers modulo some prime minus one.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Exponent {
     exponent: BigUint,
 }
 
 impl Element {
-
     /// Return the generator element of the group `G`.
     pub fn gen() -> Element {
         Element::unchecked(GENERATOR.clone())
@@ -28,7 +30,7 @@ impl Element {
     /// Inject an integer into the group: this wraps modulo the prime modulus if
     /// the number is greater than or equal to the modulus.
     pub fn new(element: BigUint) -> Element {
-        Element::unchecked(element)
+        Element::unchecked(element % &*PRIME_MODULUS)
     }
 
     /// Construct an element of a group without checking whether the given
@@ -39,11 +41,10 @@ impl Element {
 }
 
 impl Exponent {
-
     /// Inject an integer into the exponential group: this wraps modulo the
     /// prime modulus if the number is greater than or equal to the modulus.
     pub fn new(exponent: BigUint) -> Exponent {
-        Exponent::unchecked(exponent)
+        Exponent::unchecked(exponent % &*PRIME_MODULUS_MINUS_ONE)
     }
 
     /// Construct an exponent of a group without checking whether the given
@@ -59,39 +60,13 @@ impl Exponent {
     }
 }
 
+
 // Multiplicative group operations
-
-impl Zero for Element {
-    /// Return the element zero, which is always part of any valid group.
-    fn zero() -> Element {
-        Element::unchecked(BigUint::zero())
-    }
-    /// Check if this element is zero.
-    fn is_zero(&self) -> bool {
-        self.element.is_zero()
-    }
-}
-
-impl Add for Element {
-    type Output = Element;
-    /// Add group elements modulo the safe prime `PRIME_MODULUS`.
-    fn add(self, other: Element) -> Element {
-        Element::unchecked(self.element + other.element % &*PRIME_MODULUS)
-    }
-}
 
 impl One for Element {
     /// Return the element one, which is always part of any valid group.
     fn one() -> Element {
         Element::unchecked(BigUint::one())
-    }
-}
-
-impl Mul for Element {
-    type Output = Element;
-    /// Multiply group elements, modulo the group's prime modulus.
-    fn mul(self, other: Element) -> Element {
-        Element::unchecked(self.element * other.element % &*PRIME_MODULUS)
     }
 }
 
@@ -106,6 +81,22 @@ impl Element {
     }
 }
 
+impl Mul for Element {
+    type Output = Element;
+    /// Multiply group elements, modulo the group's prime modulus.
+    fn mul(self, other: Element) -> Element {
+        Element::unchecked(self.element * other.element % &*PRIME_MODULUS)
+    }
+}
+
+impl Mul for &Element {
+    type Output = Element;
+    /// Multiply group elements, modulo the group's prime modulus.
+    fn mul(self, other: &Element) -> Element {
+        Element::unchecked(&self.element * &other.element % &*PRIME_MODULUS)
+    }
+}
+
 impl Div for Element {
     type Output = Element;
     /// Divide a group element by another group element.
@@ -113,6 +104,15 @@ impl Div for Element {
         self * other.inverse()
     }
 }
+
+impl Div for &Element {
+    type Output = Element;
+    /// Divide a group element by another group element.
+    fn div(self, other: &Element) -> Element {
+        self * &other.inverse()
+    }
+}
+
 
 // Additive exponential group operations
 
@@ -137,13 +137,34 @@ impl Add for Exponent {
     }
 }
 
+impl Add for &Exponent {
+    type Output = Exponent;
+    /// Add group exponents, modulo the group's prime modulus *minus one*.
+    fn add(self, other: &Exponent) -> Exponent {
+        let a = &self.exponent;
+        let b = &other.exponent;
+        Exponent::unchecked((a + b) % &*PRIME_MODULUS_MINUS_ONE)
+    }
+}
+
 impl Sub for Exponent {
     type Output = Exponent;
     /// Subtract group exponents, modulo the group's prime modulus *minus one*.
     fn sub(self, other: Exponent) -> Exponent {
         let a = self.exponent;
         let b = other.exponent;
-        Exponent::unchecked(((a + &*PRIME_MODULUS_MINUS_ONE) - b)
+        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b)
+                            % &*PRIME_MODULUS_MINUS_ONE)
+    }
+}
+
+impl Sub for &Exponent {
+    type Output = Exponent;
+    /// Subtract group exponents, modulo the group's prime modulus *minus one*.
+    fn sub(self, other: &Exponent) -> Exponent {
+        let a = &self.exponent;
+        let b = &other.exponent;
+        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b)
                             % &*PRIME_MODULUS_MINUS_ONE)
     }
 }
@@ -152,9 +173,26 @@ impl Neg for Exponent {
     type Output = Exponent;
     /// Negate an element of the exponential group.
     fn neg(self) -> Exponent {
-        Exponent::unchecked(&*PRIME_MODULUS_MINUS_ONE - self.exponent)
+        if self.exponent.is_zero() {
+            self
+        } else {
+            Exponent::unchecked(&*PRIME_MODULUS_MINUS_ONE - self.exponent)
+        }
     }
 }
+
+impl Neg for &Exponent {
+    type Output = Exponent;
+    /// Negate an element of the exponential group.
+    fn neg(self) -> Exponent {
+        if self.exponent.is_zero() {
+            self.clone()
+        } else {
+            Exponent::unchecked(&*PRIME_MODULUS_MINUS_ONE - &self.exponent)
+        }
+    }
+}
+
 
 // Raising a group element to an element of the exponential additive group
 
@@ -176,6 +214,13 @@ impl Pow<Exponent> for Element {
     }
 }
 
+pub fn gen_pow(exp: &Exponent) -> Element {
+    Element::gen().pow(exp)
+}
+
+
+// BigUint -> Element/Exponent conversion
+
 /// Conversion from a number into a group element (via `TryFrom`) can fail if
 /// the given element is too large for the group.
 pub enum GroupError {
@@ -187,40 +232,50 @@ pub enum GroupError {
     }
 }
 
-impl TryFrom<BigUint> for Element {
-    type Error = GroupError ;
+impl From<BigUint> for Element {
     /// This succeeds if and only if the given value is strictly less than the
     /// prime modulus of the group.
-    fn try_from(number: BigUint) -> Result<Self, Self::Error> {
+    fn from(number: BigUint) -> Self {
         if number < *PRIME_MODULUS {
-            Ok(Element{element: number})
+            Element{element: number}
         } else {
-            Err(GroupError::TooLarge{number, modulus: &*PRIME_MODULUS})
+            panic!("argument out of range for conversion to group element")
         }
     }
 }
 
-impl TryFrom<BigUint> for Exponent {
-    type Error = GroupError ;
+impl From<BigUint> for Exponent {
     /// This succeeds if and only if the given value is strictly less than the
     /// prime modulus of the group *minus one*.
-    fn try_from(number: BigUint) -> Result<Self, Self::Error> {
+    fn from(number: BigUint) -> Self {
         if number < *PRIME_MODULUS_MINUS_ONE {
-            Ok(Exponent{exponent: number})
+            Exponent{exponent: number}
         } else {
-            Err(GroupError::TooLarge{number, modulus: &PRIME_MODULUS_MINUS_ONE})
+            panic!("argument out of range for conversion to group exponent")
         }
     }
 }
+
 
 // # The groups defined in [IETF RFC 3526](https://tools.ietf.org/html/rfc3526)
 
+#[cfg(not(test))]
 lazy_static! {
-    // TODO: alter this depending on whether we're in testing mode
     /// The selected "safe" `PRIME_MODULUS` for all group operations
     pub static ref PRIME_MODULUS: BigUint =
         PRIME_1536.clone();
 
+    /// The number 2 as a `BigUint` constant (all groups use generator = 2)
+    pub static ref GENERATOR: BigUint = BigUint::from(2_u32);
+}
+
+#[cfg(test)]
+lazy_static! {
+    pub static ref PRIME_MODULUS: BigUint = BigUint::from(100103_u32);
+    pub static ref GENERATOR: BigUint = BigUint::from(5_u32);
+}
+
+lazy_static! {
     static ref PRIME_1536: BigUint =
         parse_biguint_hex_or_panic(PRIME_HEX_1536);
 
@@ -238,9 +293,6 @@ lazy_static! {
 
     static ref PRIME_8192: BigUint =
         parse_biguint_hex_or_panic(PRIME_HEX_8192);
-
-    /// The number 2 as a `BigUint` constant (all groups use generator = 2)
-    pub static ref GENERATOR: BigUint = BigUint::from(2_u32);
 
     /// The selected `PRIME_MODULUS` minus one (the modulus for the additive
     /// group of exponents)
