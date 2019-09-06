@@ -17,16 +17,16 @@ pub struct Parameters {
     pub location: String,
 
     /// The number of election trustees `n`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub num_trustees: BigUint,
 
     /// The threshold `k` of trustees required to complete
     /// verification.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub threshold: BigUint,
 
     /// The prime modulus of the group used for encryption.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub prime: BigUint,
 
     /// The generator of the group used for encryption.
@@ -42,7 +42,7 @@ pub struct Record {
     /// parameters including the prime modulus, generator, number of
     /// trustees, decryption threshold value, date, and jurisdictional
     /// information, as well as the contest configurations.
-    #[serde(deserialize_with = "crate::deserialize::hash")]
+    #[serde(with = "crate::serialize::hash")]
     pub base_hash: BigUint,
 
     /// The public key and coefficient commitments for each trustee.
@@ -52,7 +52,7 @@ pub struct Record {
     pub joint_public_key: Element,
 
     /// The extended base hash `Q̅`.
-    #[serde(deserialize_with = "crate::deserialize::hash")]
+    #[serde(with = "crate::serialize::hash")]
     pub extended_base_hash: BigUint,
 
     /// The encrypted ballots cast in the election.
@@ -71,6 +71,7 @@ pub struct Record {
 
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct TrusteePublicKey {
     /// Each trustee generates `k` secret coefficients, and generates a public key from each one.
     /// The first such key is trustee's main public key (that is, `Ki = K_i0`); the rest are used
@@ -106,7 +107,7 @@ pub struct CastContest {
 
     /// The maximum number of selections `L` that can be made in this
     /// contest.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub max_selections: BigUint,
 
     /// Proof that the sum of the selections is equal to `L`.
@@ -124,9 +125,17 @@ pub struct CastSelection {
 
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct ContestTally {
     /// The summed tallies for all selections in this contest.
-    pub selections: Vec<DecryptedValue>,
+    pub selections: Vec<DecryptedTally>,
+}
+
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct DecryptedTally {
+    #[serde(serialize_with = "crate::serialize::decrypted_tally::serialize")]
+    pub value: DecryptedValue,
 }
 
 
@@ -138,22 +147,36 @@ pub struct SpoiledBallot {
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct SpoiledContest {
-    pub selections: Vec<DecryptedValue>,
+    pub selections: Vec<DecryptedSelection>,
+}
+
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct DecryptedSelection {
+    #[serde(serialize_with = "crate::serialize::decrypted_selection::serialize")]
+    pub value: DecryptedValue,
 }
 
 
 /// The decryption of an encrypted value, with proofs that it was decrypted properly.
-#[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+// This struct has custom serialization, since its fields are serialized with different names in
+// different contexts.
+#[derive(PartialEq, Eq, Debug, Deserialize)]
 pub struct DecryptedValue {
     /// The cleartext value `t`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub cleartext: BigUint,
 
     /// The decrypted value `M = g^t`.
+    #[serde(alias = "decrypted_message")]
+    #[serde(alias = "decrypted_tally")]
     pub decrypted_value: Element,
 
     /// The encryption of `t`.  Decrypting this reveals `g^t`, which is `decrypted_value` above.
+    #[serde(alias = "encrypted_message")]
+    #[serde(alias = "encrypted_tally")]
     pub encrypted_value: elgamal::Message,
 
     /// The decryption shares `M_i` used to compute the decrypted value `M`.
@@ -173,7 +196,7 @@ pub struct Share {
     pub proof: chaum_pederson::Proof,
 
     /// The share of the decrypted message `M_i`.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub share: BigUint,
 }
 
@@ -190,12 +213,12 @@ pub struct ShareRecovery {
 pub struct Fragment {
     /// The actual fragment `M_{i,j}` which is trustee `j`'s piece of
     /// the missing trustee `i`'s share of a decryption.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub fragment: BigUint,
 
     /// The LaGrange coefficient `w_{i,j}` used to compute the
     /// decryption share from the fragments.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub lagrange_coefficient: BigUint,
 
     /// The proof that the fragment encodes the same values as the
@@ -203,6 +226,6 @@ pub struct Fragment {
     pub proof: chaum_pederson::Proof,
 
     /// The index of the trustee who produced this fragment.
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     pub trustee_index: BigUint,
 }

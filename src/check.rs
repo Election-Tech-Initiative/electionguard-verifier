@@ -66,9 +66,9 @@ pub fn check(r: &Record) -> bool {
     // Contest tallies
 
     for (i, ct) in r.contest_tallies.iter().enumerate() {
-        for (j, dv) in ct.selections.iter().enumerate() {
-            check!(dv.encrypted_value == compute_encrypted_tally(&r.cast_ballots, i, j));
-            check!(check_decrypted_value(r, dv));
+        for (j, dt) in ct.selections.iter().enumerate() {
+            check!(dt.value.encrypted_value == compute_encrypted_tally(&r.cast_ballots, i, j));
+            check!(check_decrypted_value(r, &dt.value));
         }
     }
 
@@ -82,8 +82,8 @@ pub fn check(r: &Record) -> bool {
                 check!(sc.selections.len() == ct.selections.len());
             }
 
-            for dv in &sc.selections {
-                check!(check_decrypted_value(r, dv));
+            for ds in &sc.selections {
+                check!(check_decrypted_value(r, &ds.value));
             }
         }
     }
