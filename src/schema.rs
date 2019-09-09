@@ -5,7 +5,7 @@ use crate::ballot;
 use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal;
 use crate::crypto::schnorr;
-use crate::crypto::group::{Element, Exponent};
+use crate::crypto::group::{Element, Exponent, Coefficient};
 
 /// All the parameters necessary to form the election.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -191,9 +191,10 @@ pub struct Share {
     /// during decryption.
     pub recovery: Option<ShareRecovery>,
 
-    /// The proof that the share encodes the same value as the
-    /// encrypted message.
-    pub proof: chaum_pederson::Proof,
+    /// The proof that the share was properly derived from the message and the trustee's secret
+    /// key.  This is `None` if the trustee was absent - in that case, the share should be checked
+    /// against the recovery fragments instead.
+    pub proof: Option<chaum_pederson::Proof>,
 
     /// The share of the decrypted message `M_i`.
     pub share: Element,
@@ -207,18 +208,16 @@ pub struct ShareRecovery {
 }
 
 /// A fragment of a missing trustee's share of a decryption, including
-/// the LaGrange coefficient.
+/// the Lagrange coefficient.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Fragment {
     /// The actual fragment `M_{i,j}` which is trustee `j`'s piece of
     /// the missing trustee `i`'s share of a decryption.
-    #[serde(with = "crate::serialize::big_uint")]
-    pub fragment: BigUint,
+    pub fragment: Element,
 
-    /// The LaGrange coefficient `w_{i,j}` used to compute the
+    /// The Lagrange coefficient `w_{i,j}` used to compute the
     /// decryption share from the fragments.
-    #[serde(with = "crate::serialize::big_uint")]
-    pub lagrange_coefficient: BigUint,
+    pub lagrange_coefficient: Coefficient,
 
     /// The proof that the fragment encodes the same values as the
     /// encrypted message

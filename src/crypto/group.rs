@@ -23,6 +23,15 @@ pub struct Exponent {
     exponent: BigUint,
 }
 
+/// A coefficient of the polynomial used to reconstruct missing trustee keys.  This is simply an
+/// integer mod `p`.  Unlike `Element`, there is no requerement that it is non-zero.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Coefficient {
+    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    coefficient: BigUint,
+}
+
 impl Element {
     /// Return the generator element of the group `G`.
     pub fn gen() -> Element {
@@ -61,6 +70,40 @@ impl Exponent {
 
     pub fn as_uint(&self) -> &BigUint {
         &self.exponent
+    }
+}
+
+impl Coefficient {
+    /// Inject an integer into the exponential group: this wraps modulo the
+    /// prime modulus if the number is greater than or equal to the modulus.
+    pub fn new(coefficient: BigUint) -> Coefficient {
+        Coefficient::unchecked(coefficient % &*PRIME_MODULUS)
+    }
+
+    /// Construct an exponent of a group without checking whether the given
+    /// integer is part of the group: this is unsafe!
+    fn unchecked(coefficient: BigUint) -> Coefficient {
+        Coefficient { coefficient }
+    }
+
+    pub fn as_uint(&self) -> &BigUint {
+        &self.coefficient
+    }
+
+    pub fn to_element(&self) -> Element {
+        Element::new(self.coefficient.clone())
+    }
+
+    pub fn to_exponent(&self) -> Exponent {
+        Exponent::new(self.coefficient.clone())
+    }
+
+    pub fn from_element(e: Element) -> Self {
+        Self::unchecked(e.as_uint().clone())
+    }
+
+    pub fn from_exponent(e: Exponent) -> Self {
+        Self::unchecked(e.as_uint().clone())
     }
 }
 
@@ -131,6 +174,27 @@ impl Div for &Element {
     fn div(self, other: &Element) -> Element {
         self * &other.inverse()
     }
+}
+
+impl Pow<&Exponent> for &Element {
+    type Output = Element;
+    /// Raise one group element to the power of an element of the corresponding
+    /// exponential group, modulo the group's prime modulus.
+    fn pow(self, other: &Exponent) -> Element {
+        Element::unchecked(self.element.modpow(&other.exponent, &*PRIME_MODULUS))
+    }
+}
+
+impl Pow<&BigUint> for &Element {
+    type Output = Element;
+    /// Raise a group element to an arbitrary exponent.
+    fn pow(self, other: &BigUint) -> Element {
+        Element::unchecked(self.element.modpow(other, &*PRIME_MODULUS))
+    }
+}
+
+pub fn gen_pow(exp: &Exponent) -> Element {
+    Element::gen().pow(exp)
 }
 
 
@@ -244,28 +308,151 @@ impl Neg for &Exponent {
     }
 }
 
-
-// Raising a group element to an element of the exponential additive group
-
-impl Pow<&Exponent> for &Element {
-    type Output = Element;
-    /// Raise one group element to the power of an element of the corresponding
-    /// exponential group, modulo the group's prime modulus.
-    fn pow(self, other: &Exponent) -> Element {
-        Element::unchecked(self.element.modpow(&other.exponent, &*PRIME_MODULUS))
-    }
-}
-
-impl Pow<&BigUint> for &Element {
-    type Output = Element;
+impl Pow<&BigUint> for &Exponent {
+    type Output = Exponent;
     /// Raise a group element to an arbitrary exponent.
-    fn pow(self, other: &BigUint) -> Element {
-        Element::unchecked(self.element.modpow(other, &*PRIME_MODULUS))
+    fn pow(self, other: &BigUint) -> Exponent {
+        Exponent::unchecked(self.exponent.modpow(other, &*PRIME_MODULUS_MINUS_ONE))
     }
 }
 
-pub fn gen_pow(exp: &Exponent) -> Element {
-    Element::gen().pow(exp)
+
+// Generic arithmetic mod `p`
+
+impl Zero for Coefficient {
+    fn zero() -> Coefficient {
+        Coefficient::unchecked(BigUint::zero())
+    }
+    fn is_zero(&self) -> bool {
+        self.coefficient.is_zero()
+    }
+}
+
+impl One for Coefficient {
+    fn one() -> Coefficient {
+        Coefficient::unchecked(BigUint::one())
+    }
+    fn is_one(&self) -> bool {
+        self.coefficient.is_one()
+    }
+}
+
+impl Coefficient {
+    pub fn inverse(&self) -> Coefficient {
+        // https://en.wikipedia.org/wiki/Modular_multiplicative_inverse#Using_Euler's_theorem
+        // "In the special case where m is a prime, ϕ(m) = m-1, and a modular
+        // inverse is given by a^-1 = a^(m-2) (mod m)."
+        Coefficient::unchecked(
+            self.coefficient.modpow(&(&*PRIME_MODULUS - 2_u8), &*PRIME_MODULUS))
+    }
+}
+
+impl Add for Coefficient {
+    type Output = Coefficient;
+    /// Add group coefficients, modulo the group's prime modulus *minus one*.
+    fn add(self, other: Coefficient) -> Coefficient {
+        let a = self.coefficient;
+        let b = other.coefficient;
+        Coefficient::unchecked((a + b) % &*PRIME_MODULUS)
+    }
+}
+
+impl Add for &Coefficient {
+    type Output = Coefficient;
+    /// Add group coefficients, modulo the group's prime modulus *minus one*.
+    fn add(self, other: &Coefficient) -> Coefficient {
+        let a = &self.coefficient;
+        let b = &other.coefficient;
+        Coefficient::unchecked((a + b) % &*PRIME_MODULUS)
+    }
+}
+
+impl Sub for Coefficient {
+    type Output = Coefficient;
+    /// Subtract group coefficients, modulo the group's prime modulus *minus one*.
+    fn sub(self, other: Coefficient) -> Coefficient {
+        let a = self.coefficient;
+        let b = other.coefficient;
+        Coefficient::unchecked((a + &*PRIME_MODULUS - b)
+                            % &*PRIME_MODULUS)
+    }
+}
+
+impl Sub for &Coefficient {
+    type Output = Coefficient;
+    /// Subtract group coefficients, modulo the group's prime modulus *minus one*.
+    fn sub(self, other: &Coefficient) -> Coefficient {
+        let a = &self.coefficient;
+        let b = &other.coefficient;
+        Coefficient::unchecked((a + &*PRIME_MODULUS - b)
+                            % &*PRIME_MODULUS)
+    }
+}
+
+impl Neg for Coefficient {
+    type Output = Coefficient;
+    /// Negate an element of the coefficiential group.
+    fn neg(self) -> Coefficient {
+        if self.coefficient.is_zero() {
+            self
+        } else {
+            Coefficient::unchecked(&*PRIME_MODULUS - self.coefficient)
+        }
+    }
+}
+
+impl Neg for &Coefficient {
+    type Output = Coefficient;
+    /// Negate an element of the coefficiential group.
+    fn neg(self) -> Coefficient {
+        if self.coefficient.is_zero() {
+            self.clone()
+        } else {
+            Coefficient::unchecked(&*PRIME_MODULUS - &self.coefficient)
+        }
+    }
+}
+
+impl Mul for Coefficient {
+    type Output = Coefficient;
+    fn mul(self, other: Coefficient) -> Coefficient {
+        Coefficient::unchecked(self.coefficient * other.coefficient % &*PRIME_MODULUS)
+    }
+}
+
+impl Mul for &Coefficient {
+    type Output = Coefficient;
+    fn mul(self, other: &Coefficient) -> Coefficient {
+        Coefficient::unchecked(&self.coefficient * &other.coefficient % &*PRIME_MODULUS)
+    }
+}
+
+impl Div for Coefficient {
+    type Output = Coefficient;
+    fn div(self, other: Coefficient) -> Coefficient {
+        self * other.inverse()
+    }
+}
+
+impl Div for &Coefficient {
+    type Output = Coefficient;
+    fn div(self, other: &Coefficient) -> Coefficient {
+        self * &other.inverse()
+    }
+}
+
+impl Pow<&Exponent> for &Coefficient {
+    type Output = Coefficient;
+    fn pow(self, other: &Exponent) -> Coefficient {
+        Coefficient::unchecked(self.coefficient.modpow(&other.exponent, &*PRIME_MODULUS))
+    }
+}
+
+impl Pow<&BigUint> for &Coefficient {
+    type Output = Coefficient;
+    fn pow(self, other: &BigUint) -> Coefficient {
+        Coefficient::unchecked(self.coefficient.modpow(other, &*PRIME_MODULUS))
+    }
 }
 
 
@@ -306,6 +493,16 @@ impl From<BigUint> for Exponent {
     }
 }
 
+impl From<BigUint> for Coefficient {
+    fn from(number: BigUint) -> Self {
+        if number < *PRIME_MODULUS {
+            Coefficient{coefficient: number}
+        } else {
+            panic!("argument out of range for conversion to coefficient")
+        }
+    }
+}
+
 impl From<u32> for Element {
     /// This succeeds if and only if the given value is strictly less than the
     /// prime modulus of the group.
@@ -317,6 +514,12 @@ impl From<u32> for Element {
 impl From<u32> for Exponent {
     /// This succeeds if and only if the given value is strictly less than the
     /// prime modulus of the group *minus one*.
+    fn from(number: u32) -> Self {
+        BigUint::from(number).into()
+    }
+}
+
+impl From<u32> for Coefficient {
     fn from(number: u32) -> Self {
         BigUint::from(number).into()
     }

@@ -1,7 +1,7 @@
 use num::BigUint;
 use num::traits::{Zero, One, Pow};
 
-use crate::crypto::group::{self, Element, Exponent, generator};
+use crate::crypto::group::{self, Element, Exponent, Coefficient, generator};
 use crate::crypto::elgamal::Message;
 use crate::schema::*;
 use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
@@ -140,24 +140,49 @@ fn check_decrypted_value(errs: &mut ErrorContext, r: &Record, dv: &DecryptedValu
         "decrypted value was not computed correctly");
 
     for (i, s) in dv.shares.iter().enumerate() {
-        if let Some(ref sr) = s.recovery {
-            for (j, f) in sr.fragments.iter().enumerate() {
-                errs.check(false, "TODO: chaum-pedersen proof");
-                errs.check(false, "TODO: other fragment checks?");
-            }
-            errs.check(false, "TODO: trustee indices are disjoint");
-            errs.check(false, "TODO: fragments are assembled correctly");
-        }
+        if let Some(ref proof) = s.proof {
+            errs.check(s.recovery.is_none(),
+                "decrypted value has both proof and recovery fragments");
 
-        if let Some(tpk) = errs.check_get(&r.trustee_public_keys, i) {
-            if let Some(c) = errs.check_get(&tpk.coefficients, 0) {
-                errs.check(s.proof.check_exp(
-                    &c.public_key,
-                    &dv.encrypted_value.public_key,
-                    &s.share,
-                    |msg, comm| hash_umc(&r.extended_base_hash, msg, comm),
-                ).is_ok(), "invalid Chaum-Pedersen proof of correct share computation");
+            if let Some(tpk) = errs.check_get(&r.trustee_public_keys, i) {
+                if let Some(c) = errs.check_get(&tpk.coefficients, 0) {
+                    errs.check(proof.check_exp(
+                        &c.public_key,
+                        &dv.encrypted_value.public_key,
+                        &s.share,
+                        |msg, comm| hash_umc(&r.extended_base_hash, msg, comm),
+                    ).is_ok(), "invalid Chaum-Pedersen proof of correct share computation");
+                }
             }
+        } else if let Some(ref sr) = s.recovery {
+            for (j, f) in sr.fragments.iter().enumerate() {
+                let mut errs = errs.scope(&format!("recovery fragment #{}", j));
+
+                errs.check(f.trustee_index >= BigUint::one() &&
+                    f.trustee_index <= r.parameters.num_trustees,
+                    "trustee index is out of range");
+
+                errs.check(f.lagrange_coefficient ==
+                    compute_lagrange_coefficient(&sr.fragments, j),
+                    "Lagrange coefficient was computed incorrectly");
+
+                if let Some(tpk) = errs.check_get(&r.trustee_public_keys, i) {
+                    // TODO: Replace with the proper public key corresponding to Pil.
+                    let K_recovery = Element::one();
+                    // TODO: this check is expected to fail until the above TODO is fixed
+                    errs.check(f.proof.check_exp(
+                        &K_recovery,
+                        &dv.encrypted_value.public_key,
+                        &f.fragment,
+                        |msg, comm| hash_umc(&r.extended_base_hash, msg, comm),
+                    ).is_ok(), "invalid Chaum-Pedersen proof of correct fragment computation");
+                }
+            }
+
+            errs.check(s.share == compute_reassembled_share(&sr.fragments),
+                "reassembly of share from fragments was not computed correctly");
+        } else {
+            errs.check(false, "decrypted value has neither proof nor recovery fragments");
         }
     }
 }
@@ -232,6 +257,37 @@ pub fn compute_share_product(
     let mut product = Element::one();
     for s in shares {
         product = &product * &s.share;
+    }
+    product
+}
+
+pub fn compute_lagrange_coefficient(
+    fragments: &[Fragment],
+    // The index of the fragment whose Lagrange coefficient we are computing.
+    index: usize,
+) -> Coefficient {
+    let mut numerator = Coefficient::one();
+    let mut denominator = Coefficient::one();
+
+    let l = Coefficient::new(fragments[index].trustee_index.clone());
+    for (i, f) in fragments.iter().enumerate() {
+        if i == index {
+            continue;
+        }
+        let j = Coefficient::new(f.trustee_index.clone());
+        numerator = &numerator * &j;
+        denominator = &denominator * &(&j - &l);
+    }
+
+    numerator / denominator
+}
+
+pub fn compute_reassembled_share(
+    fragments: &[Fragment],
+) -> Element {
+    let mut product = Element::one();
+    for f in fragments {
+        product = &product * &f.fragment.pow(&f.lagrange_coefficient.to_exponent());
     }
     product
 }

@@ -3,7 +3,7 @@ use num::bigint::RandomBits;
 use num::traits::{Zero, One, Pow};
 use rand::Rng;
 
-use crate::crypto::group::{Element, Exponent, generator, prime, prime_minus_one};
+use crate::crypto::group::{Element, Exponent, Coefficient, generator, prime, prime_minus_one};
 use crate::crypto::elgamal::Message;
 use crate::crypto::schnorr;
 use crate::crypto::chaum_pederson;
@@ -33,11 +33,12 @@ pub struct Election {
 #[derive(Clone, Default)]
 pub struct TrusteeSecrets {
     secret_keys: Vec<Exponent>,
-    shares: Vec<Element>,
+    shares: Vec<Coefficient>,
 }
 
 pub struct TrusteeInfo<'a> {
     num: usize,
+    threshold: usize,
     secrets: &'a [TrusteeSecrets],
     public_keys: &'a [schema::TrusteePublicKey],
     present: &'a [bool],
@@ -87,6 +88,7 @@ pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
 
     let trustee_info = TrusteeInfo {
         num: num_trustees,
+        threshold,
         secrets: &trustee_secrets,
         public_keys: &trustee_public_keys,
         present: &e.trustees_present,
@@ -125,16 +127,13 @@ fn generate_trustee_secrets(
 ) -> Vec<TrusteeSecrets> {
     let mut secrets = vec![TrusteeSecrets::default(); num_trustees];
 
-    // The secret keys are generated as Elements (for use as polynomial coefficients), then
-    // converted to Exponents (for use in encryption).
-    let mut coefficients = vec![Vec::with_capacity(threshold); num_trustees];
-
     // Generate secret coefficients
     for i in 0 .. num_trustees {
         for _ in 0 .. threshold {
-            let coefficient = random_element(rng);
-            secrets[i].secret_keys.push(Exponent::new(coefficient.as_uint().clone()));
-            coefficients[i].push(coefficient);
+            // Coefficients are in the range 0 < x < p, so we use `random_element` to generate
+            // them.
+            let aij = Coefficient::from_element(random_element(rng));
+            secrets[i].secret_keys.push(aij.to_exponent());
         }
     }
 
@@ -142,20 +141,19 @@ fn generate_trustee_secrets(
     // complicated: trustees have to distribute the shares via private channels, and the have to
     // validate each share that they receive from other trustees.
     for i in 0 .. num_trustees {
-        for l in 0 .. num_trustees {
+        for idx in 0 .. num_trustees {
             // The argument to the polynomial is the 1-based index of the trustee receiving the
             // share.
-            let x = Element::new(BigUint::from(l + 1));
+            let l = Coefficient::from(idx as u32 + 1);
 
-            let mut Pil = BigUint::zero();
-            // We do this arithmetic on raw BigUints.  The polynomial involves addition, which is
-            // not a supported operation for elements of the multiplicative group.
+            let mut Pil = Coefficient::zero();
             for j in 0 .. threshold {
-                let a = &coefficients[i][j] * &x.pow(&BigUint::from(j));
-                Pil += a.as_uint();
+                let aij = Coefficient::from_exponent(secrets[i].secret_keys[j].clone());
+                let a = &aij * &l.pow(&BigUint::from(j));
+                Pil = Pil + a;
             }
 
-            secrets[l].shares.push(Element::new(Pil));
+            secrets[idx].shares.push(Pil);
         }
     }
 
@@ -354,30 +352,83 @@ pub fn generate_decrypted_value(
 ) -> schema::DecryptedValue {
     let num_trustees = trustees.num;
 
+    let mut recovery_trustees = Vec::with_capacity(trustees.threshold);
+    for (i, &present) in trustees.present.iter().enumerate() {
+        if present && recovery_trustees.len() < trustees.threshold {
+            recovery_trustees.push(i);
+        }
+    }
+    assert!(recovery_trustees.len() == trustees.threshold,
+        "not enough trustees are present for decryption");
+
     // Build trustee shares M_i
     let mut shares = Vec::with_capacity(num_trustees);
     let A = &message.public_key;
     for i in 0 .. num_trustees {
-        assert!(trustees.present[i]); // TODO - recovery for non-present trustees
+        if trustees.present[i] {
+            let si = &trustees.secrets[i].secret_keys[0];
+            let Mi = A.pow(si);
+            let Ki = &trustees.public_keys[i].coefficients[0].public_key;
 
-        let si = &trustees.secrets[i].secret_keys[0];
-        let Mi = A.pow(si);
-        let Ki = &trustees.public_keys[i].coefficients[0].public_key;
+            let proof = chaum_pederson::Proof::prove_exp(
+                &Ki,
+                &si,
+                A,
+                &Mi,
+                &random_exponent(rng),
+                |msg, comm| hash_umc(extended_base_hash, msg, comm),
+            );
 
-        let proof = chaum_pederson::Proof::prove_exp(
-            &Ki,
-            &si,
-            A,
-            &Mi,
-            &random_exponent(rng),
-            |msg, comm| hash_umc(extended_base_hash, msg, comm),
-        );
+            shares.push(schema::Share {
+                recovery: None,
+                proof: Some(proof),
+                share: Mi,
+            });
+        } else {
+            let mut fragments = Vec::with_capacity(trustees.threshold);
+            for &j in &recovery_trustees {
+                let l = BigUint::from(j + 1);
+                let Pil = trustees.secrets[j].shares[i].to_exponent();
+                let Mil = A.pow(&Pil);
 
-        shares.push(schema::Share {
-            recovery: None,
-            proof,
-            share: Mi,
-        });
+                // TODO: Replace with the proper public key corresponding to Pil.
+                let K_recovery = Element::one();
+
+                let proof = chaum_pederson::Proof::prove_exp(
+                    &K_recovery,
+                    &Pil,
+                    A,
+                    &Mil,
+                    &random_exponent(rng),
+                    |msg, comm| hash_umc(extended_base_hash, msg, comm),
+                );
+
+                fragments.push(schema::Fragment {
+                    fragment: Mil,
+                    lagrange_coefficient: Coefficient::zero(),
+                    proof,
+                    trustee_index: l,
+                });
+            }
+
+            let mut lagrange_coefficients = Vec::with_capacity(fragments.len());
+            for j in 0 .. fragments.len() {
+                lagrange_coefficients.push(check::compute_lagrange_coefficient(&fragments, j));
+            }
+            for (f, w) in fragments.iter_mut().zip(lagrange_coefficients.into_iter()) {
+                f.lagrange_coefficient = w;
+            }
+
+            let share = check::compute_reassembled_share(&fragments);
+
+            shares.push(schema::Share {
+                recovery: Some(schema::ShareRecovery {
+                    fragments,
+                }),
+                proof: None,
+                share,
+            })
+        }
     }
 
     let M = &message.ciphertext / &check::compute_share_product(&shares);
