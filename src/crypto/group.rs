@@ -2,7 +2,6 @@ use num::BigUint;
 use lazy_static::*;
 use num::traits::{Zero, One, Pow, Num};
 use std::ops::{Mul, Add, Sub, Neg, Div};
-use std::convert::TryFrom;
 use serde::{Serialize, Deserialize};
 
 // TODO: custom serde instances that reject things not in the group

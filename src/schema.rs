@@ -5,7 +5,7 @@ use crate::ballot;
 use crate::crypto::chaum_pederson;
 use crate::crypto::elgamal;
 use crate::crypto::schnorr;
-use crate::crypto::group::{Element, Exponent, Coefficient};
+use crate::crypto::group::{Element, Coefficient};
 
 /// All the parameters necessary to form the election.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

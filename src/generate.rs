@@ -3,7 +3,7 @@ use num::bigint::RandomBits;
 use num::traits::{Zero, One, Pow};
 use rand::Rng;
 
-use crate::crypto::group::{Element, Exponent, Coefficient, generator, prime, prime_minus_one};
+use crate::crypto::group::{Element, Exponent, Coefficient, generator, prime_minus_one};
 use crate::crypto::elgamal::Message;
 use crate::crypto::schnorr;
 use crate::crypto::chaum_pederson;
@@ -48,7 +48,6 @@ pub struct TrusteeInfo<'a> {
 pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
     let threshold = e.parameters.threshold.to_usize().unwrap();
     let num_trustees = e.parameters.num_trustees.to_usize().unwrap();
-    let g = generator();
 
 
     // Setup phase

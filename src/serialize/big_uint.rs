@@ -1,5 +1,5 @@
 use num::{BigUint, Num};
-use serde::{ser, Serialize, Serializer, de, Deserialize, Deserializer};
+use serde::{Serialize, Serializer, de, Deserialize, Deserializer};
 
 pub fn serialize<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
 where

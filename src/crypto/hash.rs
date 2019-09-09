@@ -2,7 +2,7 @@ use digest::Digest;
 use num::BigUint;
 use sha2::Sha256;
 use crate::crypto::elgamal;
-use crate::crypto::group::{Element, Exponent};
+use crate::crypto::group::Element;
 
 /// Specifies how the challenge should be computed by specifying which
 /// inputs should be hashed, and in what order.

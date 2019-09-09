@@ -1,7 +1,7 @@
 use num::BigUint;
 use num::traits::{Zero, One, Pow};
 
-use crate::crypto::group::{self, Element, Exponent, Coefficient, generator};
+use crate::crypto::group::{self, Element, Coefficient, generator};
 use crate::crypto::elgamal::Message;
 use crate::schema::*;
 use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
@@ -166,7 +166,7 @@ fn check_decrypted_value(errs: &mut ErrorContext, r: &Record, dv: &DecryptedValu
                     compute_lagrange_coefficient(&sr.fragments, j),
                     "Lagrange coefficient was computed incorrectly");
 
-                if let Some(tpk) = errs.check_get(&r.trustee_public_keys, i) {
+                if let Some(_tpk) = errs.check_get(&r.trustee_public_keys, i) {
                     // TODO: Replace with the proper public key corresponding to Pil.
                     let K_recovery = Element::one();
                     // TODO: this check is expected to fail until the above TODO is fixed
@@ -224,7 +224,7 @@ pub fn compute_encrypted_tally(
 }
 
 pub fn compute_base_hash(
-    parameters: &Parameters,
+    _parameters: &Parameters,
 ) -> BigUint {
     BigUint::zero() // TODO
 }
@@ -244,8 +244,8 @@ pub fn compute_joint_public_key(
 }
 
 pub fn compute_extended_base_hash(
-    base_hash: &BigUint,
-    trustee_public_keys: &[TrusteePublicKey],
+    _base_hash: &BigUint,
+    _trustee_public_keys: &[TrusteePublicKey],
 ) -> BigUint {
     BigUint::zero() // TODO
 }
