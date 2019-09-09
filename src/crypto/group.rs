@@ -10,7 +10,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Element {
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     element: BigUint,
 }
 
@@ -18,7 +18,7 @@ pub struct Element {
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Exponent {
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     exponent: BigUint,
 }
 
@@ -27,7 +27,7 @@ pub struct Exponent {
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Coefficient {
-    #[serde(deserialize_with = "crate::deserialize::biguint")]
+    #[serde(with = "crate::serialize::big_uint")]
     coefficient: BigUint,
 }
 
