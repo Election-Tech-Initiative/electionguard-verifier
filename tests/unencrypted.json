@@ -1,0 +1,57 @@
+{
+    "parameters": {
+        "date": "today",
+        "location": "here",
+        "num_trustees": 5,
+        "threshold": 3,
+        "prime": "2410312426921032588552076022197566074856950548502459942654116941958108831682612228890093858261341614673227141477904012196503648957050582631942730706805009223062734745341073406696246014589361659774041027169249453200378729434170325843778659198143763193776859869524088940195577346119843545301547043747207749969763750084308926339295559968882457872412993810129130294592999947926365264059284647209730384947211681434464714438488520940127459844288859336526896320919633919",
+        "generator": "2"
+    },
+
+    "cast_ballots": [
+        {
+            "information": {
+                "date": "today",
+                "device_info": "123",
+                "time": "now",
+                "tracker": "456"
+            },
+            "contests": [
+                { "selections": [true, false, false] },
+                { "selections": [false, true, false] },
+                { "selections": [false, false, true] }
+            ]
+        },
+        {
+            "information": {
+                "date": "today",
+                "device_info": "123",
+                "time": "now",
+                "tracker": "456"
+            },
+            "contests": [
+                { "selections": [false, true, false] },
+                { "selections": [false, false, true] },
+                { "selections": [false, false, true] }
+            ]
+        }
+    ],
+
+    "spoiled_ballots": [
+        {
+            "information": {
+                "date": "today",
+                "device_info": "123",
+                "time": "now",
+                "tracker": "456"
+            },
+            "contests": [
+                { "selections": [false, false, true] },
+                { "selections": [false, true, false] },
+                { "selections": [true, false, false] }
+            ]
+        }
+    ],
+
+    "trustees_present": [true, true, true, true, true]
+}

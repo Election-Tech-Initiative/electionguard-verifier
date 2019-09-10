@@ -1,5 +1,8 @@
 use digest::Digest;
 use num::BigUint;
+use sha2::Sha256;
+use crate::crypto::elgamal;
+use crate::crypto::group::Element;
 
 /// Specifies how the challenge should be computed by specifying which
 /// inputs should be hashed, and in what order.
@@ -23,6 +26,7 @@ impl<'a, P: 'a + Copy> Spec<'a, P> {
         R: 'a + Fn(P) -> &'a BigUint,
         D: Digest,
     {
+        // TODO: pretty sure there should be some padding / length between elements?
         let hash = self
             .resolve(resolver)
             .map(BigUint::to_bytes_be)
@@ -42,3 +46,60 @@ impl<'a, P: 'a + Copy> Spec<'a, P> {
         })
     }
 }
+
+pub fn hash_uints(xs: &[&BigUint]) -> BigUint {
+    let inputs = xs.iter().map(|i| Input::External(i)).collect::<Vec<_>>();
+    Spec::<()>(&inputs).exec::<_, Sha256>(|_| unreachable!())
+}
+
+/// Hash together a BigUint, a message, and a commitment.
+pub fn hash_umc(
+    u: &BigUint,
+    m: &elgamal::Message,
+    c: &elgamal::Message,
+) -> BigUint {
+    hash_uints(&[
+        u,
+        m.public_key.as_uint(),
+        m.ciphertext.as_uint(),
+        c.public_key.as_uint(),
+        c.ciphertext.as_uint(),
+    ])
+}
+
+/// Hash together a BigUint, a message, and two commitments.
+pub fn hash_umcc(
+    u: &BigUint,
+    m: &elgamal::Message,
+    c1: &elgamal::Message,
+    c2: &elgamal::Message,
+) -> BigUint {
+    hash_uints(&[
+        u,
+        m.public_key.as_uint(),
+        m.ciphertext.as_uint(),
+        c1.public_key.as_uint(),
+        c1.ciphertext.as_uint(),
+        c2.public_key.as_uint(),
+        c2.ciphertext.as_uint(),
+    ])
+}
+
+/// Hash together three BigUints.
+pub fn hash_uuu(
+    u1: &BigUint,
+    u2: &BigUint,
+    u3: &BigUint,
+) -> BigUint {
+    hash_uints(&[u1, u2, u3])
+}
+
+/// Hash together a BigUint and two group Elements.
+pub fn hash_uee(
+    u: &BigUint,
+    e1: &Element,
+    e2: &Element,
+) -> BigUint {
+    hash_uints(&[u, e1.as_uint(), e2.as_uint()])
+}
+
