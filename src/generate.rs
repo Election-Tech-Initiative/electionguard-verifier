@@ -2,6 +2,7 @@ use num::{BigUint, ToPrimitive};
 use num::bigint::RandomBits;
 use num::traits::{Zero, One, Pow};
 use rand::Rng;
+use serde::{Serialize, Deserialize};
 
 use crate::crypto::group::{Element, Exponent, Coefficient, generator, prime_minus_one};
 use crate::crypto::elgamal::Message;
@@ -12,15 +13,18 @@ use crate::schema;
 use crate::check;
 
 
+#[derive(Serialize, Deserialize)]
 pub struct Ballot {
     pub information: schema::BallotInfo,
     pub contests: Vec<Contest>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Contest {
     pub selections: Vec<bool>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Election {
     pub parameters: schema::Parameters,
     pub cast_ballots: Vec<Ballot>,

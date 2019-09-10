@@ -1,6 +1,15 @@
 use num::{BigUint, Num};
 use serde::{Serialize, Serializer, de, Deserialize, Deserializer};
 
+
+#[derive(Serialize)]
+#[serde(transparent)]
+pub struct SerializeBigUint<'a>(
+    #[serde(serialize_with = "self::serialize")]
+    pub &'a BigUint
+);
+
+
 pub fn serialize<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

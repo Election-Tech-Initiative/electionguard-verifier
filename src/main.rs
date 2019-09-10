@@ -63,6 +63,7 @@ const EXIT_PARSE_ERROR: i32 = 65; // EX_DATAERR
 fn main() {
     match run() {
         Ok(()) => {
+            println!("OK");
             std::process::exit(EXIT_SUCCESS)
         }
         Err(Error::IO(e)) => {
@@ -74,6 +75,7 @@ fn main() {
             std::process::exit(EXIT_PARSE_ERROR)
         }
         Err(Error::Check(msgs)) => {
+            eprintln!("{} errors:", msgs.len());
             for msg in msgs {
                 eprintln!("{}", msg);
             }
