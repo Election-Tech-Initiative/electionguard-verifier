@@ -34,8 +34,8 @@ impl Proof {
         let combined_challenge = &self.left.challenge + &self.right.challenge;
         let expected_challenge = Exponent::new(gen_challenge(
             message,
-            &self.left.committment,
-            &self.right.committment,
+            &self.left.commitment,
+            &self.right.commitment,
         ));
         let challenge_ok = combined_challenge == expected_challenge;
 
@@ -102,7 +102,7 @@ impl Proof {
                     // against.
                     message,
                     commitment_zero,
-                    &proof_one.committment,
+                    &proof_one.commitment,
                 );
                 // This `a + -b` order makes sure we don't try to produce a negative BigUint.
                 &combined_challenge + (-fake_challenge).as_uint().clone()
@@ -145,7 +145,7 @@ impl Proof {
                     // `prove_plaintext` is modified based on the plaintext value being compared
                     // against.
                     message,
-                    &proof_zero.committment,
+                    &proof_zero.commitment,
                     commitment_one,
                 );
                 &combined_challenge + (-fake_challenge).as_uint().clone()

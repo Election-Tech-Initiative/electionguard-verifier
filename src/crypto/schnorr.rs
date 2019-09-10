@@ -11,8 +11,8 @@ use crate::crypto::group::{Element, Exponent, generator};
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Proof {
     /// The one-use public key `k = gʳ` generated from the random
-    /// one-use private key `r`. This acts as a committment to `r`.
-    committment: Element,
+    /// one-use private key `r`. This acts as a commitment to `r`.
+    commitment: Element,
 
     /// The challenge `c` that is produced by hashing relevent
     /// parameters, including the original public key `h` and the
@@ -41,7 +41,7 @@ impl Proof {
         gen_challenge: impl FnOnce(&Element, &Element) -> BigUint,
     ) -> Status {
         let challenge_ok =
-            self.challenge == Exponent::new(gen_challenge(public_key, &self.committment));
+            self.challenge == Exponent::new(gen_challenge(public_key, &self.commitment));
         let response_ok = self.transcript(
             public_key,
         );
@@ -60,7 +60,7 @@ impl Proof {
         // Unpack inputs, using the names from the crypto documentation.
         let g = generator();
         let h = public_key;
-        let k = &self.committment;
+        let k = &self.commitment;
         let c = &self.challenge;
         let u = &self.response;
 
@@ -92,7 +92,7 @@ impl Proof {
         let u = r + &(c * s);
 
         Proof {
-            committment: commitment,
+            commitment: commitment,
             challenge: challenge,
             response: u,
         }
@@ -115,7 +115,7 @@ impl Proof {
         let k = g.pow(u) / h.pow(c);
 
         Proof {
-            committment: k,
+            commitment: k,
             challenge: c.clone(),
             response: u.clone(),
         }

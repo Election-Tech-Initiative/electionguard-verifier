@@ -107,7 +107,7 @@
       {
         "public_key": 86152162,
         "proof": {
-          "committment": 52805652,
+          "commitment": 52805652,
           "challenge": 3564681,
           "response": 56145127
         }
@@ -117,7 +117,7 @@
       {
         "public_key": 89498755,
         "proof": {
-          "committment": 59761147,
+          "commitment": 59761147,
           "challenge": 47535088,
           "response": 99264034
         }
@@ -127,7 +127,7 @@
       {
         "public_key": 10007199,
         "proof": {
-          "committment": 60717743,
+          "commitment": 60717743,
           "challenge": 80638333,
           "response": 17607901
         }
@@ -135,7 +135,7 @@
       {
         "public_key": 65715626,
         "proof": {
-          "committment": 42209502,
+          "commitment": 42209502,
           "challenge": 22790218,
           "response": 24627992
         }
@@ -143,7 +143,7 @@
       {
         "public_key": 4571504,
         "proof": {
-          "committment": 71404595,
+          "commitment": 71404595,
           "challenge": 85263042,
           "response": 85896719
         }
@@ -163,7 +163,7 @@
                 "ciphertext": 4632698
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 49084627,
                   "ciphertext": 24957193
                 },
@@ -171,7 +171,7 @@
                 "response": 11424544
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 76669914,
                   "ciphertext": 42534555
                 },
@@ -185,7 +185,7 @@
                 "ciphertext": 2389507
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 73408056,
                   "ciphertext": 26202241
                 },
@@ -193,7 +193,7 @@
                 "response": 22228033
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 2986944,
                   "ciphertext": 2371556
                 },
@@ -204,7 +204,7 @@
           ],
           "max_selections": 87322137,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 94554048,
               "ciphertext": 93798528
             },
@@ -230,7 +230,7 @@
                 "ciphertext": 84956733
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 35821927,
                   "ciphertext": 67921491
                 },
@@ -238,7 +238,7 @@
                 "response": 73704923
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 16805871,
                   "ciphertext": 35778061
                 },
@@ -249,7 +249,7 @@
           ],
           "max_selections": 52869437,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 79893859,
               "ciphertext": 93022475
             },
@@ -265,7 +265,7 @@
                 "ciphertext": 13887419
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 16018494,
                   "ciphertext": 3977865
                 },
@@ -273,7 +273,7 @@
                 "response": 33705074
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 13012180,
                   "ciphertext": 13182579
                 },
@@ -287,7 +287,7 @@
                 "ciphertext": 6081529
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 4904276,
                   "ciphertext": 27261390
                 },
@@ -295,7 +295,7 @@
                 "response": 73072767
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 13219593,
                   "ciphertext": 83194969
                 },
@@ -309,7 +309,7 @@
                 "ciphertext": 57183923
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 69980665,
                   "ciphertext": 26789033
                 },
@@ -317,7 +317,7 @@
                 "response": 54467565
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 60175521,
                   "ciphertext": 72895643
                 },
@@ -331,7 +331,7 @@
                 "ciphertext": 47592938
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 13822943,
                   "ciphertext": 83712293
                 },
@@ -339,7 +339,7 @@
                 "response": 42170101
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 17332795,
                   "ciphertext": 88429764
                 },
@@ -353,7 +353,7 @@
                 "ciphertext": 97504705
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 2014876,
                   "ciphertext": 57883270
                 },
@@ -361,7 +361,7 @@
                 "response": 7068457
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 93284703,
                   "ciphertext": 39363438
                 },
@@ -372,7 +372,7 @@
           ],
           "max_selections": 11408792,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 97249505,
               "ciphertext": 12246817
             },
@@ -388,7 +388,7 @@
                 "ciphertext": 84061021
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 9303307,
                   "ciphertext": 77087047
                 },
@@ -396,7 +396,7 @@
                 "response": 72868924
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 76732422,
                   "ciphertext": 65181659
                 },
@@ -410,7 +410,7 @@
                 "ciphertext": 46138730
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 54005865,
                   "ciphertext": 7393911
                 },
@@ -418,7 +418,7 @@
                 "response": 55940968
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 1167802,
                   "ciphertext": 5560101
                 },
@@ -432,7 +432,7 @@
                 "ciphertext": 74831094
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 70912081,
                   "ciphertext": 65867482
                 },
@@ -440,7 +440,7 @@
                 "response": 48508206
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 63428823,
                   "ciphertext": 99080857
                 },
@@ -451,7 +451,7 @@
           ],
           "max_selections": 93197094,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 98714208,
               "ciphertext": 68169202
             },
@@ -477,7 +477,7 @@
                 "ciphertext": 25354207
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 34810359,
                   "ciphertext": 18440382
                 },
@@ -485,7 +485,7 @@
                 "response": 33680163
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 31231795,
                   "ciphertext": 52090032
                 },
@@ -499,7 +499,7 @@
                 "ciphertext": 40454280
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 63742532,
                   "ciphertext": 8361970
                 },
@@ -507,7 +507,7 @@
                 "response": 76668285
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 24492816,
                   "ciphertext": 22472781
                 },
@@ -521,7 +521,7 @@
                 "ciphertext": 48713003
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 15878821,
                   "ciphertext": 53255443
                 },
@@ -529,7 +529,7 @@
                 "response": 46316873
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 12430363,
                   "ciphertext": 68792764
                 },
@@ -543,7 +543,7 @@
                 "ciphertext": 81274790
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 10822529,
                   "ciphertext": 53298721
                 },
@@ -551,7 +551,7 @@
                 "response": 97408372
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 85618576,
                   "ciphertext": 23555000
                 },
@@ -562,7 +562,7 @@
           ],
           "max_selections": 31156872,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 22088845,
               "ciphertext": 27912085
             },
@@ -578,7 +578,7 @@
                 "ciphertext": 51064299
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 57112990,
                   "ciphertext": 60017639
                 },
@@ -586,7 +586,7 @@
                 "response": 76759481
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 15743404,
                   "ciphertext": 8858964
                 },
@@ -600,7 +600,7 @@
                 "ciphertext": 87620679
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 34730345,
                   "ciphertext": 36008421
                 },
@@ -608,7 +608,7 @@
                 "response": 40556464
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 47766442,
                   "ciphertext": 73225603
                 },
@@ -622,7 +622,7 @@
                 "ciphertext": 44696233
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 86558899,
                   "ciphertext": 28215621
                 },
@@ -630,7 +630,7 @@
                 "response": 64073094
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 42499867,
                   "ciphertext": 98439551
                 },
@@ -644,7 +644,7 @@
                 "ciphertext": 5633790
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 55426933,
                   "ciphertext": 4728365
                 },
@@ -652,7 +652,7 @@
                 "response": 50290087
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 16156325,
                   "ciphertext": 17409019
                 },
@@ -663,7 +663,7 @@
           ],
           "max_selections": 17949108,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 81063503,
               "ciphertext": 78965748
             },
@@ -679,7 +679,7 @@
                 "ciphertext": 74704808
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 38159862,
                   "ciphertext": 33893982
                 },
@@ -687,7 +687,7 @@
                 "response": 9981147
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 16038935,
                   "ciphertext": 92575033
                 },
@@ -701,7 +701,7 @@
                 "ciphertext": 76694329
               },
               "zero_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 48067180,
                   "ciphertext": 4322636
                 },
@@ -709,7 +709,7 @@
                 "response": 14848200
               },
               "one_proof": {
-                "committment": {
+                "commitment": {
                   "public_key": 92320062,
                   "ciphertext": 90413951
                 },
@@ -720,7 +720,7 @@
           ],
           "max_selections": 35499188,
           "num_selections_proof": {
-            "committment": {
+            "commitment": {
               "public_key": 5052048,
               "ciphertext": 1541510
             },
@@ -751,7 +751,7 @@
               {
                 "share": 12646530,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 330992,
                     "ciphertext": 25850247
                   },
@@ -762,7 +762,7 @@
               {
                 "share": 39272376,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 47061485,
                     "ciphertext": 19465144
                   },
@@ -785,7 +785,7 @@
               {
                 "share": 18302282,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 54232353,
                     "ciphertext": 81872919
                   },
@@ -796,7 +796,7 @@
               {
                 "share": 35071219,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 73127617,
                     "ciphertext": 25253404
                   },
@@ -807,7 +807,7 @@
               {
                 "share": 64555893,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 15225181,
                     "ciphertext": 24387304
                   },
@@ -828,7 +828,7 @@
               {
                 "share": 3352058,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 8238610,
                     "ciphertext": 63640680
                   },
@@ -849,7 +849,7 @@
               {
                 "share": 21675925,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 39639856,
                     "ciphertext": 79650014
                   },
@@ -860,7 +860,7 @@
               {
                 "share": 47576074,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 42484533,
                     "ciphertext": 79699316
                   },
@@ -871,7 +871,7 @@
               {
                 "share": 16011009,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 86739492,
                     "ciphertext": 98706151
                   },
@@ -882,7 +882,7 @@
               {
                 "share": 27739039,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 223666,
                     "ciphertext": 39628599
                   },
@@ -893,7 +893,7 @@
               {
                 "share": 53497114,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 59683562,
                     "ciphertext": 75480498
                   },
@@ -914,7 +914,7 @@
               {
                 "share": 21432984,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 57555043,
                     "ciphertext": 90304676
                   },
@@ -937,7 +937,7 @@
               {
                 "share": 2520687,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 24329340,
                     "ciphertext": 94687264
                   },
@@ -948,7 +948,7 @@
               {
                 "share": 36588412,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 21414711,
                     "ciphertext": 21361153
                   },
@@ -959,7 +959,7 @@
               {
                 "share": 9556525,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 5164728,
                     "ciphertext": 48503617
                   },
@@ -980,7 +980,7 @@
               {
                 "share": 2212236,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 41292423,
                     "ciphertext": 25315529
                   },
@@ -991,7 +991,7 @@
               {
                 "share": 79620987,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 7180881,
                     "ciphertext": 52013897
                   },
@@ -1012,7 +1012,7 @@
               {
                 "share": 99046520,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 93406149,
                     "ciphertext": 4680741
                   },
@@ -1023,7 +1023,7 @@
               {
                 "share": 55936603,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 5854338,
                     "ciphertext": 9483258
                   },
@@ -1034,7 +1034,7 @@
               {
                 "share": 99051948,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 42894221,
                     "ciphertext": 37542090
                   },
@@ -1055,7 +1055,7 @@
               {
                 "share": 73151366,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 57577330,
                     "ciphertext": 76856347
                   },
@@ -1066,7 +1066,7 @@
               {
                 "share": 28352112,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 66793761,
                     "ciphertext": 17824216
                   },
@@ -1089,7 +1089,7 @@
               {
                 "share": 52801265,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 34736546,
                     "ciphertext": 82555680
                   },
@@ -1100,7 +1100,7 @@
               {
                 "share": 98265097,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 28277242,
                     "ciphertext": 40339079
                   },
@@ -1111,7 +1111,7 @@
               {
                 "share": 62028773,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 29608404,
                     "ciphertext": 88879728
                   },
@@ -1122,7 +1122,7 @@
               {
                 "share": 30169521,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 22717114,
                     "ciphertext": 45658634
                   },
@@ -1145,7 +1145,7 @@
               {
                 "share": 71574999,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 44993411,
                     "ciphertext": 86156577
                   },
@@ -1156,7 +1156,7 @@
               {
                 "share": 17376936,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 31783955,
                     "ciphertext": 63853790
                   },
@@ -1167,7 +1167,7 @@
               {
                 "share": 19818494,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 80247332,
                     "ciphertext": 22373263
                   },
@@ -1178,7 +1178,7 @@
               {
                 "share": 15820313,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 90235934,
                     "ciphertext": 25051866
                   },
@@ -1199,7 +1199,7 @@
               {
                 "share": 73064578,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 44043328,
                     "ciphertext": 94461172
                   },
@@ -1210,7 +1210,7 @@
               {
                 "share": 984315,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 81600675,
                     "ciphertext": 33651916
                   },
@@ -1221,7 +1221,7 @@
               {
                 "share": 5743329,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 25666330,
                     "ciphertext": 68424189
                   },
@@ -1232,7 +1232,7 @@
               {
                 "share": 42499723,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 82606148,
                     "ciphertext": 82514872
                   },
@@ -1243,7 +1243,7 @@
               {
                 "share": 6043872,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 39951580,
                     "ciphertext": 68956145
                   },
@@ -1264,7 +1264,7 @@
               {
                 "share": 13326773,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 52654425,
                     "ciphertext": 55540497
                   },
@@ -1275,7 +1275,7 @@
               {
                 "share": 58461944,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 40080967,
                     "ciphertext": 70652962
                   },
@@ -1286,7 +1286,7 @@
               {
                 "share": 9414200,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 15439203,
                     "ciphertext": 9806406
                   },
@@ -1307,7 +1307,7 @@
               {
                 "share": 19152259,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 54629755,
                     "ciphertext": 49324256
                   },
@@ -1318,7 +1318,7 @@
               {
                 "share": 77978978,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 65182792,
                     "ciphertext": 83718482
                   },
@@ -1329,7 +1329,7 @@
               {
                 "share": 40717701,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 65129243,
                     "ciphertext": 61652121
                   },
@@ -1340,7 +1340,7 @@
               {
                 "share": 30084466,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 94625711,
                     "ciphertext": 41954382
                   },
@@ -1373,7 +1373,7 @@
               {
                 "share": 43784478,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 43328845,
                     "ciphertext": 9837781
                   },
@@ -1384,7 +1384,7 @@
               {
                 "share": 21458117,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 290216,
                     "ciphertext": 90219428
                   },
@@ -1405,7 +1405,7 @@
               {
                 "share": 38915768,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 98121907,
                     "ciphertext": 46113508
                   },
@@ -1416,7 +1416,7 @@
               {
                 "share": 40239715,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 79867161,
                     "ciphertext": 79195518
                   },
@@ -1427,7 +1427,7 @@
               {
                 "share": 14057277,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 23372289,
                     "ciphertext": 94770249
                   },
@@ -1438,7 +1438,7 @@
               {
                 "share": 84861520,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 48597350,
                     "ciphertext": 86824164
                   },
@@ -1449,7 +1449,7 @@
               {
                 "share": 96481239,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 84633386,
                     "ciphertext": 63498381
                   },
@@ -1470,7 +1470,7 @@
               {
                 "share": 42937221,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 41504562,
                     "ciphertext": 20749818
                   },
@@ -1481,7 +1481,7 @@
               {
                 "share": 8243126,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 17943198,
                     "ciphertext": 98049166
                   },
@@ -1492,7 +1492,7 @@
               {
                 "share": 70006395,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 53739694,
                     "ciphertext": 18586109
                   },
@@ -1503,7 +1503,7 @@
               {
                 "share": 54797815,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 6583470,
                     "ciphertext": 33951566
                   },
@@ -1524,7 +1524,7 @@
               {
                 "share": 50795182,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 90043115,
                     "ciphertext": 33405233
                   },
@@ -1535,7 +1535,7 @@
               {
                 "share": 15449083,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 69398244,
                     "ciphertext": 82025000
                   },
@@ -1558,7 +1558,7 @@
               {
                 "share": 14325750,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 30851709,
                     "ciphertext": 74284126
                   },
@@ -1569,7 +1569,7 @@
               {
                 "share": 76810709,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 14985396,
                     "ciphertext": 7122502
                   },
@@ -1592,7 +1592,7 @@
               {
                 "share": 84299466,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 86844377,
                     "ciphertext": 68966706
                   },
@@ -1603,7 +1603,7 @@
               {
                 "share": 69546802,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 87203202,
                     "ciphertext": 7046759
                   },
@@ -1614,7 +1614,7 @@
               {
                 "share": 93733860,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 52760560,
                     "ciphertext": 21117355
                   },
@@ -1625,7 +1625,7 @@
               {
                 "share": 84650522,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 40154818,
                     "ciphertext": 9613167
                   },
@@ -1648,7 +1648,7 @@
               {
                 "share": 90743488,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 8382622,
                     "ciphertext": 20294414
                   },
@@ -1659,7 +1659,7 @@
               {
                 "share": 68496287,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 75355101,
                     "ciphertext": 87475522
                   },
@@ -1670,7 +1670,7 @@
               {
                 "share": 56567518,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 726617,
                     "ciphertext": 36004172
                   },
@@ -1681,7 +1681,7 @@
               {
                 "share": 67725212,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 60757056,
                     "ciphertext": 37338694
                   },
@@ -1692,7 +1692,7 @@
               {
                 "share": 85680691,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 62004295,
                     "ciphertext": 24668684
                   },
@@ -1713,7 +1713,7 @@
               {
                 "share": 14711620,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 86683130,
                     "ciphertext": 60929386
                   },
@@ -1724,7 +1724,7 @@
               {
                 "share": 63061754,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 85615219,
                     "ciphertext": 432272
                   },
@@ -1735,7 +1735,7 @@
               {
                 "share": 65806633,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 61051913,
                     "ciphertext": 82919399
                   },
@@ -1746,7 +1746,7 @@
               {
                 "share": 88690886,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 54244836,
                     "ciphertext": 88598624
                   },
@@ -1757,7 +1757,7 @@
               {
                 "share": 45214274,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 46661228,
                     "ciphertext": 22353490
                   },
@@ -1778,7 +1778,7 @@
               {
                 "share": 4011297,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 92329533,
                     "ciphertext": 44661415
                   },
@@ -1789,7 +1789,7 @@
               {
                 "share": 23203436,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 27252277,
                     "ciphertext": 29735822
                   },
@@ -1800,7 +1800,7 @@
               {
                 "share": 13603953,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 25107505,
                     "ciphertext": 62937889
                   },
@@ -1823,7 +1823,7 @@
               {
                 "share": 28998727,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 3785759,
                     "ciphertext": 68861504
                   },
@@ -1834,7 +1834,7 @@
               {
                 "share": 6667635,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 75735060,
                     "ciphertext": 3744121
                   },
@@ -1855,7 +1855,7 @@
               {
                 "share": 73539578,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 27248603,
                     "ciphertext": 24490424
                   },
@@ -1866,7 +1866,7 @@
               {
                 "share": 19569795,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 54123425,
                     "ciphertext": 2223488
                   },
@@ -1877,7 +1877,7 @@
               {
                 "share": 6551186,
                 "proof": {
-                  "committment": {
+                  "commitment": {
                     "public_key": 1296921,
                     "ciphertext": 65424561
                   },
@@ -1910,7 +1910,7 @@
           {
             "share": 96478949,
             "proof": {
-              "committment": {
+              "commitment": {
                 "public_key": 96284068,
                 "ciphertext": 95692440
               },
@@ -1921,7 +1921,7 @@
           {
             "share": 90398555,
             "proof": {
-              "committment": {
+              "commitment": {
                 "public_key": 82876627,
                 "ciphertext": 98963959
               },
@@ -1932,7 +1932,7 @@
           {
             "share": 74333820,
             "proof": {
-              "committment": {
+              "commitment": {
                 "public_key": 29309749,
                 "ciphertext": 10998220
               },
@@ -1953,7 +1953,7 @@
           {
             "share": 50847065,
             "proof": {
-              "committment": {
+              "commitment": {
                 "public_key": 13592788,
                 "ciphertext": 34650207
               },

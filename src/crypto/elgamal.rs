@@ -6,7 +6,7 @@ use crate::crypto::group::{Element, Exponent, generator};
 /// An ElGamal message `(c, d)` encoding zero. This is useful because
 /// you can only combine two ciphertexts if they both encode zero, as
 /// in the equation `hᵘ = hᵗ⁺ᶜʳ = hᵗ (hʳ)ᶜ = d bᶜ`. This acts as a
-/// committment to the one-time private key `t` used in this proof.
+/// commitment to the one-time private key `t` used in this proof.
 ///
 /// A message that has been encrypted using exponential ElGamal.
 ///

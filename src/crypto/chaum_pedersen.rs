@@ -32,7 +32,7 @@ pub mod disj;
 ///   will pass the `transcript` check, but will fail `check` due to having the wrong challenge.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Proof {
-    pub committment: Message,
+    pub commitment: Message,
     pub challenge: Exponent,
     pub response: Exponent,
 }
@@ -61,7 +61,7 @@ impl Proof {
         gen_challenge: impl FnOnce(&Message, &Message) -> BigUint,
     ) -> Status {
         let challenge_ok =
-            self.challenge == Exponent::new(gen_challenge(message, &self.committment));
+            self.challenge == Exponent::new(gen_challenge(message, &self.commitment));
         let response_status = self.transcript_zero(
             public_key,
             message,
@@ -83,8 +83,8 @@ impl Proof {
         let h = public_key;
         let a = &message.public_key;
         let b = &message.ciphertext;
-        let alpha = &self.committment.public_key;
-        let beta = &self.committment.ciphertext;
+        let alpha = &self.commitment.public_key;
+        let beta = &self.commitment.ciphertext;
         let c = &self.challenge;
         let u = &self.response;
 
@@ -133,7 +133,7 @@ impl Proof {
         let u = t + &(c * r);
 
         Proof {
-            committment: commitment,
+            commitment: commitment,
             challenge: challenge,
             response: u,
         }
@@ -164,7 +164,7 @@ impl Proof {
         let beta = h.pow(u) / b.pow(c);
 
         Proof {
-            committment: Message {
+            commitment: Message {
                 public_key: alpha,
                 ciphertext: beta,
             },

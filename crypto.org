@@ -173,7 +173,7 @@ We can convert this from an /interactive/ zero-knowledge proof to a
 non-interactive zero-knowledge proof. Intuitively, all we need from
 them is the challenge $c$ that the prover can't control. We can
 replace them with a hash function like SHA256, and let $c$ be the hash
-of the committment $k$. To make sure that proofs can't be reused
+of the commitment $k$. To make sure that proofs can't be reused
 across elections, we also include information about the specific
 election.[fn:1] The noninteractive version works like this:
 1. The prover generates a random exponent $0 < r < p - 1$.
@@ -241,7 +241,7 @@ $b = g^{m_1} \cdot h^r$ and $\beta = g^{m_2} \cdot h^t$. Then
   h^{t + cr} &\overset{?}{=} g^{m_1 + c m_2} \cdot h^{t + cr} \\
 \end{aligned}
 The $m$s get in the way! It only works if both $m$s are zero. That's
-why we encrypt one zero message in the committment, and the other
+why we encrypt one zero message in the commitment, and the other
 message is the message we are trying to show encrypts zero.
 
 ** Showing Two Messages are Equal
@@ -317,7 +317,7 @@ h^r) = (1, g^{m_{\text{fake}}})
 
 The basic idea is that if we fix a fake challenge
 $c_{\text{fake}}$ and fake response $u_{\text{fake}}$ in advance, then
-we can construct a fake committment $(\alpha_{\text{fake}},
+we can construct a fake commitment $(\alpha_{\text{fake}},
 \beta_{\text{fake}})$ to satisfy the equations:
 \begin{aligned}
 g^{u_{\text{fake}}} = \alpha_{\text{fake}} \cdot
