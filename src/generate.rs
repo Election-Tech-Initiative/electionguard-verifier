@@ -6,7 +6,7 @@ use rand::Rng;
 use crate::crypto::group::{Element, Exponent, Coefficient, generator, prime_minus_one};
 use crate::crypto::elgamal::Message;
 use crate::crypto::schnorr;
-use crate::crypto::chaum_pederson;
+use crate::crypto::chaum_pedersen;
 use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
 use crate::ballot;
 use crate::schema;
@@ -215,7 +215,7 @@ pub fn generate_cast_ballot(
             );
 
             let proof = if s {
-                chaum_pederson::disj::Proof::prove_one(
+                chaum_pedersen::disj::Proof::prove_one(
                     joint_public_key,
                     &message,
                     &one_time_secret,
@@ -225,7 +225,7 @@ pub fn generate_cast_ballot(
                     |msg, comm0, comm1| hash_umcc(extended_base_hash, msg, comm0, comm1),
                 )
             } else {
-                chaum_pederson::disj::Proof::prove_zero(
+                chaum_pedersen::disj::Proof::prove_zero(
                     joint_public_key,
                     &message,
                     &one_time_secret,
@@ -252,7 +252,7 @@ pub fn generate_cast_ballot(
 
         // TODO: max_selections is currently hardcoded
         let max_selections = BigUint::one();
-        let num_selections_proof = chaum_pederson::Proof::prove_plaintext(
+        let num_selections_proof = chaum_pedersen::Proof::prove_plaintext(
             joint_public_key,
             &selection_sum,
             &selection_sum_secret,
@@ -369,7 +369,7 @@ pub fn generate_decrypted_value(
             let Mi = A.pow(si);
             let Ki = &trustees.public_keys[i].coefficients[0].public_key;
 
-            let proof = chaum_pederson::Proof::prove_exp(
+            let proof = chaum_pedersen::Proof::prove_exp(
                 &Ki,
                 &si,
                 A,
@@ -393,7 +393,7 @@ pub fn generate_decrypted_value(
                 // TODO: Replace with the proper public key corresponding to Pil.
                 let K_recovery = Element::one();
 
-                let proof = chaum_pederson::Proof::prove_exp(
+                let proof = chaum_pedersen::Proof::prove_exp(
                     &K_recovery,
                     &Pil,
                     A,

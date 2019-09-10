@@ -466,7 +466,7 @@ mod test {
     use crate::crypto::hash::hash_umc;
     use super::Proof;
 
-    /// Encrypt a zero, construct a Chaum-Pederson proof that it's zero, and check the proof.
+    /// Encrypt a zero, construct a Chaum-Pedersen proof that it's zero, and check the proof.
     #[test]
     fn prove_check_zero() {
         let public_key = elgamal::test::public_key();
@@ -492,7 +492,7 @@ mod test {
         assert!(status.is_ok());
     }
 
-    /// Encrypt a nonzero value, construct a Chaum-Pederson proof claiming it's zero, and check the
+    /// Encrypt a nonzero value, construct a Chaum-Pedersen proof claiming it's zero, and check the
     /// proof (which should fail).
     #[test]
     #[should_panic]
@@ -547,7 +547,7 @@ mod test {
         assert!(status.is_ok());
     }
 
-    /// Encrypt the same value twice, construct a Chaum-Pederson proof that they're equal, and check
+    /// Encrypt the same value twice, construct a Chaum-Pedersen proof that they're equal, and check
     /// the proof.
     #[test]
     fn prove_check_equal() {
@@ -581,7 +581,7 @@ mod test {
         assert!(status.is_ok());
     }
 
-    /// Encrypt two different values, construct a Chaum-Pederson proof that claims they're equal, and
+    /// Encrypt two different values, construct a Chaum-Pedersen proof that claims they're equal, and
     /// check the proof (which should fail).
     #[test]
     #[should_panic]
@@ -652,7 +652,7 @@ mod test {
     }
 
 
-    /// Encrypt a value, construct a Chaum-Pederson proof that it's that value, and check the proof.
+    /// Encrypt a value, construct a Chaum-Pedersen proof that it's that value, and check the proof.
     #[test]
     fn prove_check_plaintext() {
         let public_key = elgamal::test::public_key();
@@ -681,7 +681,7 @@ mod test {
         assert!(status.is_ok());
     }
 
-    /// Encrypt a value, construct a Chaum-Pederson proof claiming it's a different value, and check
+    /// Encrypt a value, construct a Chaum-Pedersen proof claiming it's a different value, and check
     /// the proof (which should fail).
     #[test]
     #[should_panic]
@@ -744,7 +744,7 @@ mod test {
     }
 
 
-    /// Generate a key pair, raise a value to the secret key, construct a Chaum-Pederson proof the
+    /// Generate a key pair, raise a value to the secret key, construct a Chaum-Pedersen proof the
     /// exponentiation was done correctly, and check the proof.
     #[test]
     fn prove_check_exp() {
@@ -776,7 +776,7 @@ mod test {
     }
 
     /// Generate a key pair, raise a value to some other exponent, construct an invalid
-    /// Chaum-Pederson proof claiming that the exponentiation was done correctly, and check the
+    /// Chaum-Pedersen proof claiming that the exponentiation was done correctly, and check the
     /// proof.
     #[test]
     #[should_panic]

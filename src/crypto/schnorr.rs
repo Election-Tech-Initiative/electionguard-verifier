@@ -6,7 +6,7 @@ use crate::crypto::group::{Element, Exponent, generator};
 
 /// A proof of posession of the private key.
 ///
-/// This provides the same API as `chaum_pederson::Proof`, except there is only one property to
+/// This provides the same API as `chaum_pedersen::Proof`, except there is only one property to
 /// reason about, so there is only one variant of `check`, `transcript`, `prove`, and `simulate`.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Proof {

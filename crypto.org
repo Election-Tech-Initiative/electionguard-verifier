@@ -201,13 +201,13 @@ zero, and that the number of selected options for each contest is no
 more than the limit $L$ for that contest. To do this, we will once
 again use a non-interactive zero-knowledge proof.
 
-The basis for both of these is a Chaum-Pederson proof, which is used
+The basis for both of these is a Chaum-Pedersen proof, which is used
 to show that a given ElGamal message is actually an encryption of
 zero.
 
-* Chaum-Pederson Proofs
+* Chaum-Pedersen Proofs
 
-For a Chaum-Pederson Proof, we have some ElGamal encrypted message
+For a Chaum-Pedersen Proof, we have some ElGamal encrypted message
 $(a, b) = (g^r, g^m \cdot h^r)$ that is an encryption of a cleartext
 $m$ using some known public key $h$ and a one-time private key $r$. In
 this case though, we want to convince people that $m = 0$, so $(a, b)
@@ -246,7 +246,7 @@ message is the message we are trying to show encrypts zero.
 
 ** Showing Two Messages are Equal
 
-We can use a Chaum-Pederson proof to show that two messages $(a_1,
+We can use a Chaum-Pedersen proof to show that two messages $(a_1,
 b_1)$ and $(a_2, b_2)$ are encryptions of the same cleartext. This is
 useful, for example, for checking that exactly $L$ options are
 selected in a contest, because we can homomorphically tally all the
@@ -267,7 +267,7 @@ Dividing the messages homomorphically subtracts the messages:
 &= (g^{r_1 - r_2}, g^{m-m} \cdot c^{r_1 - r_2}) \\
 &= (g^{r_1 - r_2}, c^{r_1 - r_2})
 \end{aligned}
-Now we can produce a Chaum-Pederson proof that the resulting message
+Now we can produce a Chaum-Pedersen proof that the resulting message
 is encodes zero.
 
 So all together, given a public key $h$, and two messages $(a_1, b_1)$
@@ -301,7 +301,7 @@ is an encryption of $m_{\text{real}}$ or $m_{\text{fake}}$ without
 revealing which is which.
 
 We need to have an encrypted ElGamal message for $m_{\text{real}}$ and
-$m_{\text{fake}}$ in order to create a Chaum-Pederson proof, but the
+$m_{\text{fake}}$ in order to create a Chaum-Pedersen proof, but the
 verifier already knows the values of both. So we can make our lives a
 lot easier and use $r = 0$ as the one-time private key for encrypting
 both, which is a poor choice if we cared about keeping them secret,
@@ -358,7 +358,7 @@ h^{u_{\text{fake}}} = \beta_{\text{fake}} \cdot
 
 ** Decryptions
 
-We can also use Chaum-Pederson proofs to show that the process of
+We can also use Chaum-Pedersen proofs to show that the process of
 decryption has been carried out correctly.
 
 When we tally up all the votes, we end up with an ElGamal message $(A,
@@ -381,12 +381,12 @@ And we're using the permanent private key rather than a one-time
 private key. So everything is just backwards.
 
 Luckily, as long as we're consistent about flipping everything, we can
-still use our Chaum-Pederson proofs to prove that $M_i = A^{s_i}$ is
+still use our Chaum-Pedersen proofs to prove that $M_i = A^{s_i}$ is
 correcty by showing that $(h_i, M_i)$ is an encryption of zero. We use
 $h_i$ as the one-time public key because it's the permanent public key
 and we're living in Bizarro decryption world.
 
-So our procedure is pretty much a usual Chaum-Pederson proof, where
+So our procedure is pretty much a usual Chaum-Pedersen proof, where
 the message $(a, b) = (h_i, M_i)$ and the public key is $A$:
 1. Generate a random exponent $t$, and commit to it by publishing
    $(\alpha, \beta) = (g^t, A^t)$. Remember, $A$ is playing the role of permanent public

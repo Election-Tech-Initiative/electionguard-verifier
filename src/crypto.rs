@@ -1,4 +1,4 @@
-pub mod chaum_pederson;
+pub mod chaum_pedersen;
 pub mod elgamal;
 pub mod hash;
 pub mod schnorr;

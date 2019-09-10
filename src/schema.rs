@@ -2,7 +2,7 @@ use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::ballot;
-use crate::crypto::chaum_pederson;
+use crate::crypto::chaum_pedersen;
 use crate::crypto::elgamal;
 use crate::crypto::schnorr;
 use crate::crypto::group::{Element, Coefficient};
@@ -111,7 +111,7 @@ pub struct CastContest {
     pub max_selections: BigUint,
 
     /// Proof that the sum of the selections is equal to `L`.
-    pub num_selections_proof: chaum_pederson::Proof,
+    pub num_selections_proof: chaum_pedersen::Proof,
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -120,7 +120,7 @@ pub struct CastSelection {
     pub message: elgamal::Message,
     /// Proof that either `message` is encryption of zero or `message` is the encryption of one.
     #[serde(flatten)]
-    pub proof: chaum_pederson::disj::Proof,
+    pub proof: chaum_pedersen::disj::Proof,
 }
 
 
@@ -194,7 +194,7 @@ pub struct Share {
     /// The proof that the share was properly derived from the message and the trustee's secret
     /// key.  This is `None` if the trustee was absent - in that case, the share should be checked
     /// against the recovery fragments instead.
-    pub proof: Option<chaum_pederson::Proof>,
+    pub proof: Option<chaum_pedersen::Proof>,
 
     /// The share of the decrypted message `M_i`.
     pub share: Element,
@@ -221,7 +221,7 @@ pub struct Fragment {
 
     /// The proof that the fragment encodes the same values as the
     /// encrypted message
-    pub proof: chaum_pederson::Proof,
+    pub proof: chaum_pedersen::Proof,
 
     /// The index of the trustee who produced this fragment.
     #[serde(with = "crate::serialize::big_uint")]
