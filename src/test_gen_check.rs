@@ -2,13 +2,12 @@ use num::BigUint;
 use rand;
 use crate::generate::{self, Election, Ballot, Contest};
 use crate::check;
-use crate::schema::Parameters;
+use crate::schema::{Parameters, BallotInfo};
 use crate::crypto::group::{generator, prime};
-use crate::ballot;
 
 #[test]
 fn test_normal() {
-    let dummy_information = ballot::Information {
+    let dummy_information = BallotInfo {
         date: "today".to_owned(),
         device_info: "this device".to_owned(),
         time: "right now".to_owned(),
@@ -74,7 +73,7 @@ fn test_normal() {
 // proof of correct fragment computation".
 #[should_panic]
 fn test_missing() {
-    let dummy_information = ballot::Information {
+    let dummy_information = BallotInfo {
         date: "today".to_owned(),
         device_info: "this device".to_owned(),
         time: "right now".to_owned(),

@@ -1,7 +1,6 @@
 use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::ballot;
 use crate::crypto::chaum_pedersen;
 use crate::crypto::elgamal;
 use crate::crypto::schnorr;
@@ -94,8 +93,24 @@ pub struct TrusteeCoefficient {
 /// about where and when the ballot was encrypted.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct CastBallot {
-    pub ballot_info: ballot::Information,
+    pub ballot_info: BallotInfo,
     pub contests: Vec<CastContest>,
+}
+
+/// Auxiliary information about a ballot other than the selections made by the voter.
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct BallotInfo {
+    /// The date the ballot was encrypted.
+    pub date: String,
+
+    /// Information about the device that encrypted the ballot
+    pub device_info: String,
+
+    /// The time the ballot was encrypted.
+    pub time: String,
+
+    /// The tracker code generated for this ballot.
+    pub tracker: String,
 }
 
 /// A contests consists of a list of encrypted selections, along with
@@ -142,7 +157,7 @@ pub struct SelectionTally {
 /// A decryption of an encrypted ballot that was spoiled.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct SpoiledBallot {
-    pub ballot_info: ballot::Information,
+    pub ballot_info: BallotInfo,
     pub contests: Vec<SpoiledContest>,
 }
 

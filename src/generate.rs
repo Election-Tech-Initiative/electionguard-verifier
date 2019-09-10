@@ -8,13 +8,12 @@ use crate::crypto::elgamal::Message;
 use crate::crypto::schnorr;
 use crate::crypto::chaum_pedersen;
 use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
-use crate::ballot;
 use crate::schema;
 use crate::check;
 
 
 pub struct Ballot {
-    pub information: ballot::Information,
+    pub information: schema::BallotInfo,
     pub contests: Vec<Contest>,
 }
 
