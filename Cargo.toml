@@ -17,3 +17,11 @@ rand = "0.5"
 
 [lib]
 path = "src/lib.rs"
+
+[[bin]]
+name = "verify"
+path = "src/main.rs"
+
+[[bin]]
+name = "encrypt"
+path = "src/bin/encrypt_election.rs"
