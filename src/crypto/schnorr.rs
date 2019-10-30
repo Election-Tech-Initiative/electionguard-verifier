@@ -1,8 +1,8 @@
-use num::BigUint;
 use num::traits::Pow;
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::group::{Element, Exponent, generator};
+use crate::crypto::group::{generator, Element, Exponent};
 
 /// A proof of posession of the private key.
 ///
@@ -42,9 +42,7 @@ impl Proof {
     ) -> Status {
         let challenge_ok =
             self.challenge == Exponent::new(gen_challenge(public_key, &self.commitment));
-        let response_ok = self.transcript(
-            public_key,
-        );
+        let response_ok = self.transcript(public_key);
         Status {
             challenge: challenge_ok,
             response: response_ok,
@@ -53,10 +51,7 @@ impl Proof {
 
     /// Check validity of this transcript for proving possession of the private key corresponding
     /// to `public_key`.
-    pub fn transcript(
-        &self,
-        public_key: &Element,
-    ) -> bool {
+    pub fn transcript(&self, public_key: &Element) -> bool {
         // Unpack inputs, using the names from the crypto documentation.
         let g = generator();
         let h = public_key;
@@ -92,17 +87,13 @@ impl Proof {
         let u = r + &(c * s);
 
         Proof {
-            commitment: commitment,
-            challenge: challenge,
+            commitment,
+            challenge,
             response: u,
         }
     }
 
-    pub fn simulate(
-        public_key: &Element,
-        challenge: &Exponent,
-        response: &Exponent,
-    ) -> Proof {
+    pub fn simulate(public_key: &Element, challenge: &Exponent, response: &Exponent) -> Proof {
         let g = generator();
         let h = public_key;
         let c = challenge;
@@ -128,14 +119,13 @@ impl Status {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use num::traits::Pow;
-    use crate::crypto::elgamal;
-    use crate::crypto::hash::hash_uee;
-    use crate::crypto::group::{Exponent, generator};
     use super::Proof;
+    use crate::crypto::elgamal;
+    use crate::crypto::group::{generator, Exponent};
+    use crate::crypto::hash::hash_uee;
+    use num::traits::Pow;
 
     /// Generate a key pair, construct a Schnorr proof of possession of the private key, and check
     /// the proof.
@@ -146,17 +136,13 @@ mod test {
         let secret_key = 18930_u32.into();
         let public_key = generator().pow(&secret_key);
         let one_time_exponent = 26664_u32.into();
-        let proof = Proof::prove(
-            &public_key,
-            &secret_key,
-            &one_time_exponent,
-            |key, comm| hash_uee(&extended_base_hash, key, comm),
-        );
+        let proof = Proof::prove(&public_key, &secret_key, &one_time_exponent, |key, comm| {
+            hash_uee(&extended_base_hash, key, comm)
+        });
 
-        let status = proof.check(
-            &public_key,
-            |key, comm| hash_uee(&extended_base_hash, key, comm),
-        );
+        let status = proof.check(&public_key, |key, comm| {
+            hash_uee(&extended_base_hash, key, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -179,10 +165,9 @@ mod test {
             |key, comm| hash_uee(&extended_base_hash, key, comm),
         );
 
-        let status = proof.check(
-            &public_key,
-            |key, comm| hash_uee(&extended_base_hash, key, comm),
-        );
+        let status = proof.check(&public_key, |key, comm| {
+            hash_uee(&extended_base_hash, key, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -194,15 +179,9 @@ mod test {
         let public_key = 1647_u32.into();
         let challenge = 10335_u32.into();
         let response = 14942_u32.into();
-        let proof = Proof::simulate(
-            &public_key,
-            &challenge,
-            &response,
-        );
+        let proof = Proof::simulate(&public_key, &challenge, &response);
 
-        let status = proof.transcript(
-            &public_key,
-        );
+        let status = proof.transcript(&public_key);
         dbg!(&status);
         assert!(status);
     }

@@ -1,8 +1,8 @@
+use crate::crypto::elgamal;
+use crate::crypto::group::Element;
 use digest::Digest;
 use num::BigUint;
 use sha2::Sha256;
-use crate::crypto::elgamal;
-use crate::crypto::group::Element;
 
 /// Specifies how the challenge should be computed by specifying which
 /// inputs should be hashed, and in what order.
@@ -53,11 +53,7 @@ pub fn hash_uints(xs: &[&BigUint]) -> BigUint {
 }
 
 /// Hash together a BigUint, a message, and a commitment.
-pub fn hash_umc(
-    u: &BigUint,
-    m: &elgamal::Message,
-    c: &elgamal::Message,
-) -> BigUint {
+pub fn hash_umc(u: &BigUint, m: &elgamal::Message, c: &elgamal::Message) -> BigUint {
     hash_uints(&[
         u,
         m.public_key.as_uint(),
@@ -86,20 +82,11 @@ pub fn hash_umcc(
 }
 
 /// Hash together three BigUints.
-pub fn hash_uuu(
-    u1: &BigUint,
-    u2: &BigUint,
-    u3: &BigUint,
-) -> BigUint {
+pub fn hash_uuu(u1: &BigUint, u2: &BigUint, u3: &BigUint) -> BigUint {
     hash_uints(&[u1, u2, u3])
 }
 
 /// Hash together a BigUint and two group Elements.
-pub fn hash_uee(
-    u: &BigUint,
-    e1: &Element,
-    e2: &Element,
-) -> BigUint {
+pub fn hash_uee(u: &BigUint, e1: &Element, e2: &Element) -> BigUint {
     hash_uints(&[u, e1.as_uint(), e2.as_uint()])
 }
-

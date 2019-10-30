@@ -2,9 +2,9 @@
 //! `generate::Election` from stdin, encrypts it, and writes a JSON-encoded `schema::Record` to
 //! stdout.
 
+use rand::thread_rng;
 use serde_json::{from_reader, to_writer_pretty};
 use std::io;
-use rand::thread_rng;
 
 use electionguard_verify::generate;
 

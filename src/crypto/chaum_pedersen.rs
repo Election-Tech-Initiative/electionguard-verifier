@@ -1,9 +1,9 @@
-use num::BigUint;
 use num::traits::Pow;
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::elgamal::Message;
-use crate::crypto::group::{Element, Exponent, generator};
+use crate::crypto::group::{generator, Element, Exponent};
 
 pub mod disj;
 
@@ -62,10 +62,7 @@ impl Proof {
     ) -> Status {
         let challenge_ok =
             self.challenge == Exponent::new(gen_challenge(message, &self.commitment));
-        let response_status = self.transcript_zero(
-            public_key,
-            message,
-        );
+        let response_status = self.transcript_zero(public_key, message);
         Status {
             challenge: challenge_ok,
             response: response_status,
@@ -73,11 +70,7 @@ impl Proof {
     }
 
     /// Check validity of this transcript for proving that `message` is an encryption of zero.
-    pub fn transcript_zero(
-        &self,
-        public_key: &Element,
-        message: &Message,
-    ) -> ResponseStatus {
+    pub fn transcript_zero(&self, public_key: &Element, message: &Message) -> ResponseStatus {
         // Unpack inputs, using the names from the crypto documentation.
         let g = generator();
         let h = public_key;
@@ -133,8 +126,8 @@ impl Proof {
         let u = t + &(c * r);
 
         Proof {
-            commitment: commitment,
-            challenge: challenge,
+            commitment,
+            challenge,
             response: u,
         }
     }
@@ -172,7 +165,6 @@ impl Proof {
             response: u.clone(),
         }
     }
-
 
     /// Use this `Proof` to establish that `message1` is equal to `message2`.
     pub fn check_equal(
@@ -239,14 +231,8 @@ impl Proof {
         response: &Exponent,
     ) -> Proof {
         let combined_message = message1.h_sub(message2);
-        Self::simulate_zero(
-            public_key,
-            &combined_message,
-            challenge,
-            response,
-        )
+        Self::simulate_zero(public_key, &combined_message, challenge, response)
     }
-
 
     /// Use this `Proof` to establish that `message` is an encryption of `plaintext`.
     pub fn check_plaintext(
@@ -261,11 +247,8 @@ impl Proof {
         // only needs to match the secret used to construct the proof (`prove_plaintext`), so that
         // the `encrypted_plaintext` is equal in both places.
         let plaintext_one_time_secret = 0_u32.into();
-        let encrypted_plaintext = Message::encrypt(
-            public_key,
-            plaintext,
-            &plaintext_one_time_secret,
-        );
+        let encrypted_plaintext =
+            Message::encrypt(public_key, plaintext, &plaintext_one_time_secret);
         self.check_equal(public_key, message, &encrypted_plaintext, gen_challenge)
     }
 
@@ -282,11 +265,8 @@ impl Proof {
         // only needs to match the secret used to construct the proof (`prove_plaintext`), so that
         // the `encrypted_plaintext` is equal in both places.
         let plaintext_one_time_secret = 0_u32.into();
-        let encrypted_plaintext = Message::encrypt(
-            public_key,
-            plaintext,
-            &plaintext_one_time_secret,
-        );
+        let encrypted_plaintext =
+            Message::encrypt(public_key, plaintext, &plaintext_one_time_secret);
         self.transcript_equal(public_key, message, &encrypted_plaintext)
     }
 
@@ -301,11 +281,8 @@ impl Proof {
     ) -> Proof {
         // This must match the `plaintext_one_time_secret` in `check_plaintext`.
         let plaintext_one_time_secret = 0_u32.into();
-        let encrypted_plaintext = Message::encrypt(
-            public_key,
-            plaintext,
-            &plaintext_one_time_secret,
-        );
+        let encrypted_plaintext =
+            Message::encrypt(public_key, plaintext, &plaintext_one_time_secret);
         Self::prove_equal(
             public_key,
             message,
@@ -329,11 +306,8 @@ impl Proof {
     ) -> Proof {
         // This must match the `plaintext_one_time_secret` in `check_plaintext`.
         let plaintext_one_time_secret = 0_u32.into();
-        let encrypted_plaintext = Message::encrypt(
-            public_key,
-            plaintext,
-            &plaintext_one_time_secret,
-        );
+        let encrypted_plaintext =
+            Message::encrypt(public_key, plaintext, &plaintext_one_time_secret);
         Self::simulate_equal(
             public_key,
             message,
@@ -342,7 +316,6 @@ impl Proof {
             response,
         )
     }
-
 
     /// Use this `Proof` to establish that `result = base^secret_key`, where `secret_key` is the
     /// secret key corresponding to `public_key`.
@@ -456,15 +429,13 @@ impl ResponseStatus {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use num::BigUint;
-    use num::traits::Pow;
-    use crate::crypto::elgamal::{self, Message};
-    use crate::crypto::group::{Element, Exponent, generator, prime};
-    use crate::crypto::hash::hash_umc;
     use super::Proof;
+    use crate::crypto::elgamal::{self, Message};
+    use crate::crypto::group::{generator, prime, Element, Exponent};
+    use crate::crypto::hash::hash_umc;
+    use num::traits::Pow;
 
     /// Encrypt a zero, construct a Chaum-Pedersen proof that it's zero, and check the proof.
     #[test]
@@ -483,11 +454,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_zero(
-            &public_key,
-            &message,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_zero(&public_key, &message, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -511,11 +480,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_zero(
-            &public_key,
-            &message,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_zero(&public_key, &message, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -538,11 +505,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_zero(
-            &public_key,
-            &message,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_zero(&public_key, &message, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -571,12 +536,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_equal(
-            &public_key,
-            &message1,
-            &message2,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_equal(&public_key, &message1, &message2, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -607,12 +569,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_equal(
-            &public_key,
-            &message1,
-            &message2,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_equal(&public_key, &message1, &message2, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -641,16 +600,12 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_equal(
-            &public_key,
-            &message1,
-            &message2,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_equal(&public_key, &message1, &message2, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
-
 
     /// Encrypt a value, construct a Chaum-Pedersen proof that it's that value, and check the proof.
     #[test]
@@ -671,12 +626,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_plaintext(
-            &public_key,
-            &message,
-            &value,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_plaintext(&public_key, &message, &value, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -703,12 +655,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_plaintext(
-            &public_key,
-            &message,
-            &other_value,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_plaintext(&public_key, &message, &other_value, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -733,16 +682,12 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_plaintext(
-            &public_key,
-            &message,
-            &value,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_plaintext(&public_key, &message, &value, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
-
 
     /// Generate a key pair, raise a value to the secret key, construct a Chaum-Pedersen proof the
     /// exponentiation was done correctly, and check the proof.
@@ -765,12 +710,9 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_exp(
-            &public_key,
-            &base,
-            &result,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_exp(&public_key, &base, &result, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -799,16 +741,12 @@ mod test {
             |msg, comm| hash_umc(&extended_base_hash, msg, comm),
         );
 
-        let status = proof.check_exp(
-            &public_key,
-            &base,
-            &result,
-            |msg, comm| hash_umc(&extended_base_hash, msg, comm),
-        );
+        let status = proof.check_exp(&public_key, &base, &result, |msg, comm| {
+            hash_umc(&extended_base_hash, msg, comm)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
-
 
     /// Encrypt a nonzero value, construct a fake proof that it's zero using a pre-selected challenge,
     /// and check the proof (which should pass).
@@ -821,17 +759,9 @@ mod test {
         let message = Message::encrypt(&public_key, &value, &one_time_secret);
         let challenge = 11947_u32.into();
         let response = 30170_u32.into();
-        let proof = Proof::simulate_zero(
-            &public_key,
-            &message,
-            &challenge,
-            &response,
-        );
+        let proof = Proof::simulate_zero(&public_key, &message, &challenge, &response);
 
-        let status = proof.transcript_zero(
-            &public_key,
-            &message,
-        );
+        let status = proof.transcript_zero(&public_key, &message);
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -850,19 +780,9 @@ mod test {
         let message2 = Message::encrypt(&public_key, &value2, &one_time_secret2);
         let challenge = 2563_u32.into();
         let response = 4492_u32.into();
-        let proof = Proof::simulate_equal(
-            &public_key,
-            &message1,
-            &message2,
-            &challenge,
-            &response,
-        );
+        let proof = Proof::simulate_equal(&public_key, &message1, &message2, &challenge, &response);
 
-        let status = proof.transcript_equal(
-            &public_key,
-            &message1,
-            &message2,
-        );
+        let status = proof.transcript_equal(&public_key, &message1, &message2);
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -879,19 +799,10 @@ mod test {
         let plaintext = 8049_u32.into();
         let challenge = 8508_u32.into();
         let response = 23843_u32.into();
-        let proof = Proof::simulate_plaintext(
-            &public_key,
-            &message,
-            &plaintext,
-            &challenge,
-            &response,
-        );
+        let proof =
+            Proof::simulate_plaintext(&public_key, &message, &plaintext, &challenge, &response);
 
-        let status = proof.transcript_plaintext(
-            &public_key,
-            &message,
-            &plaintext,
-        );
+        let status = proof.transcript_plaintext(&public_key, &message, &plaintext);
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -907,19 +818,9 @@ mod test {
         let result = base.pow(&other_exponent);
         let challenge = 15848_u32.into();
         let response = 12460_u32.into();
-        let proof = Proof::simulate_exp(
-            &public_key,
-            &base,
-            &result,
-            &challenge,
-            &response,
-        );
+        let proof = Proof::simulate_exp(&public_key, &base, &result, &challenge, &response);
 
-        let status = proof.transcript_exp(
-            &public_key,
-            &base,
-            &result,
-        );
+        let status = proof.transcript_exp(&public_key, &base, &result);
         dbg!(&status);
         assert!(status.is_ok());
     }

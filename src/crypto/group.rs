@@ -1,8 +1,8 @@
-use num::BigUint;
 use lazy_static::*;
-use num::traits::{Zero, One, Pow, Num};
-use std::ops::{Mul, Add, Sub, Neg, Div};
-use serde::{Serialize, Deserialize};
+use num::traits::{Num, One, Pow, Zero};
+use num::BigUint;
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 // TODO: custom serde instances that reject things not in the group
 
@@ -122,7 +122,6 @@ pub fn prime_minus_one() -> &'static BigUint {
     &*PRIME_MODULUS_MINUS_ONE
 }
 
-
 // Multiplicative group operations
 
 impl One for Element {
@@ -139,7 +138,9 @@ impl Element {
         // "In the special case where m is a prime, ϕ(m) = m-1, and a modular
         // inverse is given by a^-1 = a^(m-2) (mod m)."
         Element::unchecked(
-            self.element.modpow(&(&*PRIME_MODULUS - 2_u8), &*PRIME_MODULUS))
+            self.element
+                .modpow(&(&*PRIME_MODULUS - 2_u8), &*PRIME_MODULUS),
+        )
     }
 }
 
@@ -196,7 +197,6 @@ pub fn gen_pow(exp: &Exponent) -> Element {
     Element::gen().pow(exp)
 }
 
-
 // Additive exponential group operations
 
 impl Zero for Exponent {
@@ -247,8 +247,7 @@ impl Sub for Exponent {
     fn sub(self, other: Exponent) -> Exponent {
         let a = self.exponent;
         let b = other.exponent;
-        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b)
-                            % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b) % &*PRIME_MODULUS_MINUS_ONE)
     }
 }
 
@@ -258,8 +257,7 @@ impl Sub for &Exponent {
     fn sub(self, other: &Exponent) -> Exponent {
         let a = &self.exponent;
         let b = &other.exponent;
-        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b)
-                            % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b) % &*PRIME_MODULUS_MINUS_ONE)
     }
 }
 
@@ -315,7 +313,6 @@ impl Pow<&BigUint> for &Exponent {
     }
 }
 
-
 // Generic arithmetic mod `p`
 
 impl Zero for Coefficient {
@@ -342,7 +339,9 @@ impl Coefficient {
         // "In the special case where m is a prime, ϕ(m) = m-1, and a modular
         // inverse is given by a^-1 = a^(m-2) (mod m)."
         Coefficient::unchecked(
-            self.coefficient.modpow(&(&*PRIME_MODULUS - 2_u8), &*PRIME_MODULUS))
+            self.coefficient
+                .modpow(&(&*PRIME_MODULUS - 2_u8), &*PRIME_MODULUS),
+        )
     }
 }
 
@@ -372,8 +371,7 @@ impl Sub for Coefficient {
     fn sub(self, other: Coefficient) -> Coefficient {
         let a = self.coefficient;
         let b = other.coefficient;
-        Coefficient::unchecked((a + &*PRIME_MODULUS - b)
-                            % &*PRIME_MODULUS)
+        Coefficient::unchecked((a + &*PRIME_MODULUS - b) % &*PRIME_MODULUS)
     }
 }
 
@@ -383,8 +381,7 @@ impl Sub for &Coefficient {
     fn sub(self, other: &Coefficient) -> Coefficient {
         let a = &self.coefficient;
         let b = &other.coefficient;
-        Coefficient::unchecked((a + &*PRIME_MODULUS - b)
-                            % &*PRIME_MODULUS)
+        Coefficient::unchecked((a + &*PRIME_MODULUS - b) % &*PRIME_MODULUS)
     }
 }
 
@@ -454,7 +451,6 @@ impl Pow<&BigUint> for &Coefficient {
     }
 }
 
-
 // BigUint -> Element/Exponent conversion
 
 /// Conversion from a number into a group element (via `TryFrom`) can fail if
@@ -465,7 +461,7 @@ pub enum GroupError {
         number: BigUint,
         /// The modulus of the group
         modulus: &'static BigUint,
-    }
+    },
 }
 
 impl From<BigUint> for Element {
@@ -473,7 +469,7 @@ impl From<BigUint> for Element {
     /// prime modulus of the group.
     fn from(number: BigUint) -> Self {
         if !number.is_zero() && number < *PRIME_MODULUS {
-            Element{element: number}
+            Element { element: number }
         } else {
             panic!("argument out of range for conversion to group element")
         }
@@ -485,7 +481,7 @@ impl From<BigUint> for Exponent {
     /// prime modulus of the group *minus one*.
     fn from(number: BigUint) -> Self {
         if number < *PRIME_MODULUS_MINUS_ONE {
-            Exponent{exponent: number}
+            Exponent { exponent: number }
         } else {
             panic!("argument out of range for conversion to group exponent")
         }
@@ -495,7 +491,9 @@ impl From<BigUint> for Exponent {
 impl From<BigUint> for Coefficient {
     fn from(number: BigUint) -> Self {
         if number < *PRIME_MODULUS {
-            Coefficient{coefficient: number}
+            Coefficient {
+                coefficient: number,
+            }
         } else {
             panic!("argument out of range for conversion to coefficient")
         }
@@ -523,7 +521,6 @@ impl From<u32> for Coefficient {
         BigUint::from(number).into()
     }
 }
-
 
 // # The groups defined in [IETF RFC 3526](https://tools.ietf.org/html/rfc3526)
 
@@ -584,8 +581,10 @@ mod test {
 
     #[test]
     fn prime_modulus_minus_one_correct() {
-        assert!(&*PRIME_MODULUS - BigUint::one() == *PRIME_MODULUS_MINUS_ONE,
-                "PRIME_MODULUS - 1 != PRIME_MODULUS_MINUS_ONE");
+        assert!(
+            &*PRIME_MODULUS - BigUint::one() == *PRIME_MODULUS_MINUS_ONE,
+            "PRIME_MODULUS - 1 != PRIME_MODULUS_MINUS_ONE"
+        );
     }
 }
 
@@ -594,15 +593,14 @@ mod test {
 /// hard-coded constants)
 fn parse_biguint_hex_or_panic(hex: &str) -> BigUint {
     BigUint::from_str_radix(
-        &hex.replace(" ",  "")
-            .replace("\n", "")
-            .replace("\t", ""), 16)
-        .expect("Invalid hex input for parse_biguint_hex_or_panic")
+        &hex.replace(" ", "").replace("\n", "").replace("\t", ""),
+        16,
+    )
+    .expect("Invalid hex input for parse_biguint_hex_or_panic")
 }
 
 /// The prime modulus for the 1536-bit group
-const PRIME_HEX_1536: &str =
-    "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
+const PRIME_HEX_1536: &str = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
      29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
      EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245
      E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED
@@ -612,8 +610,7 @@ const PRIME_HEX_1536: &str =
      670C354E 4ABC9804 F1746C08 CA237327 FFFFFFFF FFFFFFFF";
 
 /// The prime modulus for the 2048-bit group
-const PRIME_HEX_2048: &str =
-    "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
+const PRIME_HEX_2048: &str = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
      29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
      EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245
      E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED
@@ -626,8 +623,7 @@ const PRIME_HEX_2048: &str =
      15728E5A 8AACAA68 FFFFFFFF FFFFFFFF";
 
 /// The prime modulus for the 3072-bit group
-const PRIME_HEX_3072: &str =
-    "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
+const PRIME_HEX_3072: &str = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
      29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
      EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245
      E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED
@@ -644,9 +640,8 @@ const PRIME_HEX_3072: &str =
      BBE11757 7A615D6C 770988C0 BAD946E2 08E24FA0 74E5AB31
      43DB5BFC E0FD108E 4B82D120 A93AD2CA FFFFFFFF FFFFFFFF";
 
-    /// The prime modulus for the 4096-bit group
-const PRIME_HEX_4096: &str =
-    "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
+/// The prime modulus for the 4096-bit group
+const PRIME_HEX_4096: &str = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
      29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
      EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245
      E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED
@@ -670,8 +665,7 @@ const PRIME_HEX_4096: &str =
      FFFFFFFF FFFFFFFF";
 
 /// The prime modulus for the 6144-bit group
-const PRIME_HEX_6144: &str =
-    "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 29024E08
+const PRIME_HEX_6144: &str = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 29024E08
      8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD EF9519B3 CD3A431B
      302B0A6D F25F1437 4FE1356D 6D51C245 E485B576 625E7EC6 F44C42E9
      A637ED6B 0BFF5CB6 F406B7ED EE386BFB 5A899FA5 AE9F2411 7C4B1FE6
@@ -701,8 +695,7 @@ const PRIME_HEX_6144: &str =
      6DCC4024 FFFFFFFF FFFFFFFF";
 
 /// The prime modulus for the 8192-bit group
-const PRIME_HEX_8192: &str =
-    "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
+const PRIME_HEX_8192: &str = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
      29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
      EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245
      E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED
