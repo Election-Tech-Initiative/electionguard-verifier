@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::crypto::chaum_pedersen;
 use crate::crypto::elgamal;
+use crate::crypto::group::{Coefficient, Element};
 use crate::crypto::schnorr;
-use crate::crypto::group::{Element, Coefficient};
 
 /// All the parameters necessary to form the election.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -68,7 +68,6 @@ pub struct Record {
     pub spoiled_ballots: Vec<SpoiledBallot>,
 }
 
-
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct TrusteePublicKey {
@@ -86,7 +85,6 @@ pub struct TrusteeCoefficient {
     /// A proof of posession of the private key.
     pub proof: schnorr::Proof,
 }
-
 
 /// An encrypted ballot, consisting of the encrypted selections for
 /// each contest, their proofs of well-formedness, and information
@@ -138,7 +136,6 @@ pub struct CastSelection {
     pub proof: chaum_pedersen::disj::Proof,
 }
 
-
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ContestTally {
@@ -152,7 +149,6 @@ pub struct SelectionTally {
     #[serde(serialize_with = "crate::serialize::decrypted_tally::serialize")]
     pub value: DecryptedValue,
 }
-
 
 /// A decryption of an encrypted ballot that was spoiled.
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -173,7 +169,6 @@ pub struct SpoiledSelection {
     #[serde(serialize_with = "crate::serialize::decrypted_selection::serialize")]
     pub value: DecryptedValue,
 }
-
 
 /// The decryption of an encrypted value, with proofs that it was decrypted properly.
 // This struct has custom serialization, since its fields are serialized with different names in

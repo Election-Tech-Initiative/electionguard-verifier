@@ -1,9 +1,9 @@
+use crate::check;
+use crate::crypto::group::{generator, prime};
+use crate::generate::{self, Ballot, Contest, Election};
+use crate::schema::{BallotInfo, Parameters};
 use num::BigUint;
 use rand;
-use crate::generate::{self, Election, Ballot, Contest};
-use crate::check;
-use crate::schema::{Parameters, BallotInfo};
-use crate::crypto::group::{generator, prime};
 
 #[test]
 fn test_normal() {
@@ -27,43 +27,59 @@ fn test_normal() {
             Ballot {
                 information: dummy_information.clone(),
                 contests: vec![
-                    Contest { selections: vec![true, false, false] },
-                    Contest { selections: vec![false, true, false] },
-                    Contest { selections: vec![false, false, true] },
+                    Contest {
+                        selections: vec![true, false, false],
+                    },
+                    Contest {
+                        selections: vec![false, true, false],
+                    },
+                    Contest {
+                        selections: vec![false, false, true],
+                    },
                 ],
             },
             Ballot {
                 information: dummy_information.clone(),
                 contests: vec![
-                    Contest { selections: vec![false, true, false] },
-                    Contest { selections: vec![false, false, true] },
-                    Contest { selections: vec![false, false, true] },
+                    Contest {
+                        selections: vec![false, true, false],
+                    },
+                    Contest {
+                        selections: vec![false, false, true],
+                    },
+                    Contest {
+                        selections: vec![false, false, true],
+                    },
                 ],
             },
         ],
-        spoiled_ballots: vec![
-            Ballot {
-                information: dummy_information.clone(),
-                contests: vec![
-                    Contest { selections: vec![false, false, true] },
-                    Contest { selections: vec![false, true, false] },
-                    Contest { selections: vec![true, false, false] },
-                ],
-            },
-        ],
+        spoiled_ballots: vec![Ballot {
+            information: dummy_information.clone(),
+            contests: vec![
+                Contest {
+                    selections: vec![false, false, true],
+                },
+                Contest {
+                    selections: vec![false, true, false],
+                },
+                Contest {
+                    selections: vec![true, false, false],
+                },
+            ],
+        }],
         trustees_present: vec![true, true, true, true, true],
     };
 
     let record = generate::generate(&mut rand::thread_rng(), e);
 
     match check::check(&record) {
-        Ok(()) => {},
+        Ok(()) => {}
         Err(errs) => {
             for err in &errs {
                 eprintln!("{}", err);
             }
             panic!("check failed with {} errors", errs.len());
-        },
+        }
     }
 }
 
@@ -93,42 +109,58 @@ fn test_missing() {
             Ballot {
                 information: dummy_information.clone(),
                 contests: vec![
-                    Contest { selections: vec![true, false, false] },
-                    Contest { selections: vec![false, true, false] },
-                    Contest { selections: vec![false, false, true] },
+                    Contest {
+                        selections: vec![true, false, false],
+                    },
+                    Contest {
+                        selections: vec![false, true, false],
+                    },
+                    Contest {
+                        selections: vec![false, false, true],
+                    },
                 ],
             },
             Ballot {
                 information: dummy_information.clone(),
                 contests: vec![
-                    Contest { selections: vec![false, true, false] },
-                    Contest { selections: vec![false, false, true] },
-                    Contest { selections: vec![false, false, true] },
+                    Contest {
+                        selections: vec![false, true, false],
+                    },
+                    Contest {
+                        selections: vec![false, false, true],
+                    },
+                    Contest {
+                        selections: vec![false, false, true],
+                    },
                 ],
             },
         ],
-        spoiled_ballots: vec![
-            Ballot {
-                information: dummy_information.clone(),
-                contests: vec![
-                    Contest { selections: vec![false, false, true] },
-                    Contest { selections: vec![false, true, false] },
-                    Contest { selections: vec![true, false, false] },
-                ],
-            },
-        ],
+        spoiled_ballots: vec![Ballot {
+            information: dummy_information.clone(),
+            contests: vec![
+                Contest {
+                    selections: vec![false, false, true],
+                },
+                Contest {
+                    selections: vec![false, true, false],
+                },
+                Contest {
+                    selections: vec![true, false, false],
+                },
+            ],
+        }],
         trustees_present: vec![true, true, false, true, true],
     };
 
     let record = generate::generate(&mut rand::thread_rng(), e);
 
     match check::check(&record) {
-        Ok(()) => {},
+        Ok(()) => {}
         Err(errs) => {
             for err in &errs {
                 eprintln!("{}", err);
             }
             panic!("check failed with {} errors", errs.len());
-        },
+        }
     }
 }

@@ -1,5 +1,5 @@
 use num::{BigUint, Num};
-use serde::{Serialize, Serializer, de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 pub fn serialize<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -15,5 +15,3 @@ where
     let s: String = Deserialize::deserialize(deserializer)?;
     BigUint::from_str_radix(&s, 16).map_err(de::Error::custom)
 }
-
-

@@ -1,7 +1,7 @@
-use num::BigUint;
+use crate::crypto::group::{generator, Element, Exponent};
 use num::traits::Pow;
+use num::BigUint;
 use serde::{Deserialize, Serialize};
-use crate::crypto::group::{Element, Exponent, generator};
 
 /// An ElGamal message `(c, d)` encoding zero. This is useful because
 /// you can only combine two ciphertexts if they both encode zero, as
@@ -24,11 +24,7 @@ pub struct Message {
 
 impl Message {
     /// Encrypt `m` using `public_key` and a `one_time_secret` key.
-    pub fn encrypt(
-        public_key: &Element,
-        m: &BigUint,
-        one_time_secret: &Exponent,
-    ) -> Message {
+    pub fn encrypt(public_key: &Element, m: &BigUint, one_time_secret: &Exponent) -> Message {
         let g = generator();
         let h = public_key;
         let r = one_time_secret;
@@ -75,11 +71,10 @@ impl Message {
     }
 }
 
-
 #[cfg(test)]
 pub mod test {
-    use num::BigUint;
     use super::*;
+    use num::BigUint;
 
     pub fn private_key() -> Exponent {
         BigUint::from(2546_u32).into()

@@ -1,17 +1,16 @@
-use num::{BigUint, ToPrimitive};
 use num::bigint::RandomBits;
-use num::traits::{Zero, One, Pow};
+use num::traits::{One, Pow, Zero};
+use num::{BigUint, ToPrimitive};
 use rand::Rng;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::crypto::group::{Element, Exponent, Coefficient, generator, prime_minus_one};
-use crate::crypto::elgamal::Message;
-use crate::crypto::schnorr;
-use crate::crypto::chaum_pedersen;
-use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
-use crate::schema;
 use crate::check;
-
+use crate::crypto::chaum_pedersen;
+use crate::crypto::elgamal::Message;
+use crate::crypto::group::{generator, prime_minus_one, Coefficient, Element, Exponent};
+use crate::crypto::hash::{hash_uee, hash_umc, hash_umcc};
+use crate::crypto::schnorr;
+use crate::schema;
 
 #[derive(Serialize, Deserialize)]
 pub struct Ballot {
@@ -47,11 +46,9 @@ pub struct TrusteeInfo<'a> {
     present: &'a [bool],
 }
 
-
 pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
     let threshold = e.parameters.threshold.to_usize().unwrap();
     let num_trustees = e.parameters.num_trustees.to_usize().unwrap();
-
 
     // Setup phase
 
@@ -64,25 +61,21 @@ pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
 
     let extended_base_hash = check::compute_extended_base_hash(&base_hash, &trustee_public_keys);
 
-
     // Voting phase
 
-    let cast_ballots = e.cast_ballots.iter().map(|b| generate_cast_ballot(
-        rng,
-        &joint_public_key,
-        &extended_base_hash,
-        b,
-    )).collect::<Vec<_>>();
+    let cast_ballots = e
+        .cast_ballots
+        .iter()
+        .map(|b| generate_cast_ballot(rng, &joint_public_key, &extended_base_hash, b))
+        .collect::<Vec<_>>();
 
     // A `CastBallot` for each spoiled ballot.  These will be turned into `SpoiledBallots` during
     // decryption.
-    let spoiled_cast_ballots = e.spoiled_ballots.iter().map(|b| generate_cast_ballot(
-        rng,
-        &joint_public_key,
-        &extended_base_hash,
-        b,
-    )).collect::<Vec<_>>();
-
+    let spoiled_cast_ballots = e
+        .spoiled_ballots
+        .iter()
+        .map(|b| generate_cast_ballot(rng, &joint_public_key, &extended_base_hash, b))
+        .collect::<Vec<_>>();
 
     // Decryption phase
 
@@ -96,19 +89,13 @@ pub fn generate(rng: &mut impl Rng, e: Election) -> schema::Record {
         present: &e.trustees_present,
     };
 
-    let contest_tallies = generate_contest_tallies(
-        rng,
-        &trustee_info,
-        &extended_base_hash,
-        &cast_ballots,
-    );
+    let contest_tallies =
+        generate_contest_tallies(rng, &trustee_info, &extended_base_hash, &cast_ballots);
 
-    let spoiled_ballots = spoiled_cast_ballots.into_iter().map(|b| generate_spoiled_ballot(
-        rng,
-        &trustee_info,
-        &extended_base_hash,
-        b,
-    )).collect::<Vec<_>>();
+    let spoiled_ballots = spoiled_cast_ballots
+        .into_iter()
+        .map(|b| generate_spoiled_ballot(rng, &trustee_info, &extended_base_hash, b))
+        .collect::<Vec<_>>();
 
     schema::Record {
         parameters: e.parameters.clone(),
@@ -130,26 +117,26 @@ fn generate_trustee_secrets(
     let mut secrets = vec![TrusteeSecrets::default(); num_trustees];
 
     // Generate secret coefficients
-    for i in 0 .. num_trustees {
-        for _ in 0 .. threshold {
+    for secret in secrets.iter_mut().take(num_trustees) {
+        for _ in 0..threshold {
             // Coefficients are in the range 0 < x < p, so we use `random_element` to generate
             // them.
             let aij = Coefficient::from_element(random_element(rng));
-            secrets[i].secret_keys.push(aij.to_exponent());
+            secret.secret_keys.push(aij.to_exponent());
         }
     }
 
     // Distribute key shares to other trustees.  In a full implementation, this step would be more
     // complicated: trustees have to distribute the shares via private channels, and the have to
     // validate each share that they receive from other trustees.
-    for i in 0 .. num_trustees {
-        for idx in 0 .. num_trustees {
+    for i in 0..num_trustees {
+        for idx in 0..num_trustees {
             // The argument to the polynomial is the 1-based index of the trustee receiving the
             // share.
             let l = Coefficient::from(idx as u32 + 1);
 
             let mut Pil = Coefficient::zero();
-            for j in 0 .. threshold {
+            for j in 0..threshold {
                 let aij = Coefficient::from_exponent(secrets[i].secret_keys[j].clone());
                 let a = &aij * &l.pow(&BigUint::from(j));
                 Pil = Pil + a;
@@ -175,22 +162,15 @@ pub fn generate_trustee_public_keys(
 
         for s in &ts.secret_keys {
             let public_key = generator().pow(s);
-            let proof = schnorr::Proof::prove(
-                &public_key,
-                s,
-                &random_exponent(rng),
-                |key, comm| hash_uee(&base_hash, key, comm),
-            );
+            let proof =
+                schnorr::Proof::prove(&public_key, s, &random_exponent(rng), |key, comm| {
+                    hash_uee(&base_hash, key, comm)
+                });
 
-            coefficients.push(schema::TrusteeCoefficient {
-                public_key,
-                proof,
-            });
+            coefficients.push(schema::TrusteeCoefficient { public_key, proof });
         }
 
-        public_keys.push(schema::TrusteePublicKey {
-            coefficients,
-        });
+        public_keys.push(schema::TrusteePublicKey { coefficients });
     }
 
     public_keys
@@ -211,11 +191,7 @@ pub fn generate_cast_ballot(
             let cleartext = if s { BigUint::one() } else { BigUint::zero() };
 
             let one_time_secret = random_exponent(rng);
-            let message = Message::encrypt(
-                joint_public_key,
-                &cleartext, 
-                &one_time_secret,
-            );
+            let message = Message::encrypt(joint_public_key, &cleartext, &one_time_secret);
 
             let proof = if s {
                 chaum_pedersen::disj::Proof::prove_one(
@@ -241,10 +217,7 @@ pub fn generate_cast_ballot(
 
             selection_secrets.push(one_time_secret);
 
-            selections.push(schema::CastSelection {
-                message,
-                proof,
-            });
+            selections.push(schema::CastSelection { message, proof });
         }
 
         let selection_sum = check::compute_selection_sum(&selections);
@@ -283,33 +256,27 @@ pub fn generate_contest_tallies(
     extended_base_hash: &BigUint,
     cast_ballots: &[schema::CastBallot],
 ) -> Vec<schema::ContestTally> {
-    if cast_ballots.len() == 0 {
+    if cast_ballots.is_empty() {
         return Vec::new();
     }
 
     // Get the ballot structure from the first ballot.
-    let contest_selections = cast_ballots[0].contests.iter()
-        .map(|c| c.selections.len()).collect::<Vec<_>>();
+    let contest_selections = cast_ballots[0]
+        .contests
+        .iter()
+        .map(|c| c.selections.len())
+        .collect::<Vec<_>>();
 
     // Add up encrypted ballots and decrypt the tallies
     let mut contests = Vec::with_capacity(contest_selections.len());
-    for i in 0 .. contest_selections.len() {
-        let mut selections = Vec::with_capacity(contest_selections[i]);
-        for j in 0 .. contest_selections[i] {
+    for (i, selection) in contest_selections.iter().enumerate() {
+        let mut selections = Vec::with_capacity(*selection);
+        for j in 0..contest_selections[i] {
             let tally = check::compute_encrypted_tally(cast_ballots, i, j);
-            let value = generate_decrypted_value(
-                rng,
-                trustee_info,
-                extended_base_hash,
-                tally,
-            );
-            selections.push(schema::SelectionTally {
-                value,
-            });
+            let value = generate_decrypted_value(rng, trustee_info, extended_base_hash, tally);
+            selections.push(schema::SelectionTally { value });
         }
-        contests.push(schema::ContestTally {
-            selections,
-        });
+        contests.push(schema::ContestTally { selections });
     }
 
     contests
@@ -325,19 +292,10 @@ pub fn generate_spoiled_ballot(
     for c in cast.contests {
         let mut selections = Vec::with_capacity(c.selections.len());
         for s in c.selections {
-            let value = generate_decrypted_value(
-                rng,
-                trustee_info,
-                extended_base_hash,
-                s.message,
-            );
-            selections.push(schema::SpoiledSelection {
-                value,
-            });
+            let value = generate_decrypted_value(rng, trustee_info, extended_base_hash, s.message);
+            selections.push(schema::SpoiledSelection { value });
         }
-        contests.push(schema::SpoiledContest {
-            selections,
-        });
+        contests.push(schema::SpoiledContest { selections });
     }
 
     schema::SpoiledBallot {
@@ -360,13 +318,15 @@ pub fn generate_decrypted_value(
             recovery_trustees.push(i);
         }
     }
-    assert!(recovery_trustees.len() == trustees.threshold,
-        "not enough trustees are present for decryption");
+    assert!(
+        recovery_trustees.len() == trustees.threshold,
+        "not enough trustees are present for decryption"
+    );
 
     // Build trustee shares M_i
     let mut shares = Vec::with_capacity(num_trustees);
     let A = &message.public_key;
-    for i in 0 .. num_trustees {
+    for i in 0..num_trustees {
         if trustees.present[i] {
             let si = &trustees.secrets[i].secret_keys[0];
             let Mi = A.pow(si);
@@ -414,7 +374,7 @@ pub fn generate_decrypted_value(
             }
 
             let mut lagrange_coefficients = Vec::with_capacity(fragments.len());
-            for j in 0 .. fragments.len() {
+            for j in 0..fragments.len() {
                 lagrange_coefficients.push(check::compute_lagrange_coefficient(&fragments, j));
             }
             for (f, w) in fragments.iter_mut().zip(lagrange_coefficients.into_iter()) {
@@ -424,9 +384,7 @@ pub fn generate_decrypted_value(
             let share = check::compute_reassembled_share(&fragments);
 
             shares.push(schema::Share {
-                recovery: Some(schema::ShareRecovery {
-                    fragments,
-                }),
+                recovery: Some(schema::ShareRecovery { fragments }),
                 proof: None,
                 share,
             })
@@ -456,7 +414,6 @@ pub fn discrete_log(element: &Element) -> Exponent {
 
     count
 }
-
 
 pub fn random_element(rng: &mut impl Rng) -> Element {
     let p1 = prime_minus_one();

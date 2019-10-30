@@ -39,10 +39,8 @@ impl Proof {
         ));
         let challenge_ok = combined_challenge == expected_challenge;
 
-        let (response_left_status, response_right_status) = self.transcript_zero_one(
-            public_key,
-            message,
-        );
+        let (response_left_status, response_right_status) =
+            self.transcript_zero_one(public_key, message);
 
         Status {
             challenge: challenge_ok,
@@ -57,16 +55,10 @@ impl Proof {
         message: &Message,
     ) -> (super::ResponseStatus, super::ResponseStatus) {
         (
-            self.left.transcript_plaintext(
-                public_key,
-                message,
-                &0_u8.into(),
-            ),
-            self.right.transcript_plaintext(
-                public_key,
-                message,
-                &1_u8.into(),
-            ),
+            self.left
+                .transcript_plaintext(public_key, message, &0_u8.into()),
+            self.right
+                .transcript_plaintext(public_key, message, &1_u8.into()),
         )
     }
 
@@ -164,12 +156,11 @@ impl Status {
     }
 }
 
-
 #[cfg(test)]
 mod test {
+    use super::Proof;
     use crate::crypto::elgamal::{self, Message};
     use crate::crypto::hash::hash_umcc;
-    use super::Proof;
 
     /// Encrypt the value zero, prove that it's either zero or one, and check both parts of the
     /// proof.
@@ -193,11 +184,9 @@ mod test {
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
         );
 
-        let status = proof.check_zero_one(
-            &public_key,
-            &message,
-            |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
-        );
+        let status = proof.check_zero_one(&public_key, &message, |msg, comm0, comm1| {
+            hash_umcc(&extended_base_hash, msg, comm0, comm1)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -224,11 +213,9 @@ mod test {
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
         );
 
-        let status = proof.check_zero_one(
-            &public_key,
-            &message,
-            |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
-        );
+        let status = proof.check_zero_one(&public_key, &message, |msg, comm0, comm1| {
+            hash_umcc(&extended_base_hash, msg, comm0, comm1)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -256,11 +243,9 @@ mod test {
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
         );
 
-        let status = proof.check_zero_one(
-            &public_key,
-            &message,
-            |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
-        );
+        let status = proof.check_zero_one(&public_key, &message, |msg, comm0, comm1| {
+            hash_umcc(&extended_base_hash, msg, comm0, comm1)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
@@ -288,11 +273,9 @@ mod test {
             |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
         );
 
-        let status = proof.check_zero_one(
-            &public_key,
-            &message,
-            |msg, comm0, comm1| hash_umcc(&extended_base_hash, msg, comm0, comm1),
-        );
+        let status = proof.check_zero_one(&public_key, &message, |msg, comm0, comm1| {
+            hash_umcc(&extended_base_hash, msg, comm0, comm1)
+        });
         dbg!(&status);
         assert!(status.is_ok());
     }
