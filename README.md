@@ -1,5 +1,9 @@
-ElectionGuard Verifier and Test Data Generator
-==============================================
+![Microsoft Defending Democracy Program: ElectionGuard](images/electionguard-banner.svg)
+
+#  🗳️ ElectionGuard Verifier
+
+![package](https://github.com/microsoft/electionguard-verifier/workflows/Linux%20Build%20Rust/badge.svg)
+[![license](https://img.shields.io/github/license/microsoft/electionguard-verifier)](LICENSE)
 
 This repository contains a reference implementation of a verifier for the
 encrypted record of an election. After an election is completed, the verifier
@@ -55,8 +59,8 @@ tally. Properties established via zero-knowledge proof are emphasized.
   + *The encrypted sum published is an encryption of the published cleartext
     result of the election*
 
-The Role of This Implementation
--------------------------------
+## The Role of This Implementation
+
 
 This implementation is meant to be a **reference implementation** of the
 verifier -- it is meant to be simple, comprehensible, and correct. While we would
@@ -65,8 +69,7 @@ as a reference. As a result, places in this codebase which are difficult to
 understand or under-documented should be considered bugs -- please report them in
 the issue tracker if you find them.
 
-Building and Running
---------------------
+## Building and Running
 
 This project is a Rust project and can be built using the standard Rust
 toolchain. Because of the high quantity of big-integer arithmetic in critical
@@ -107,3 +110,9 @@ present, they are:
 - `unencrypted.json`: a small sample unencrypted election record demonstrating
   the schema expected by the `encrypt` tool and suitable for generating test
   cases like the above
+
+## Contributing
+Help defend democracy and **[contribute to the project][]**.
+
+[Code of Conduct]: CODE_OF_CONDUCT.md
+[Contribute to the project]: CONTRIBUTING.md
