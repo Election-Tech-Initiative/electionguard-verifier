@@ -2,8 +2,8 @@
 
 #  🗳️ ElectionGuard Verifier
 
-![package](https://github.com/microsoft/electionguard-verifier/workflows/Rust%20Build%20Cargo/badge.svg)
-[![license](https://img.shields.io/github/license/microsoft/electionguard-verifier)](License)
+![package](https://github.com/microsoft/electionguard-verifier/workflows/Linux%20Build%20Rust/badge.svg)
+[![license](https://img.shields.io/github/license/microsoft/electionguard-verifier)](LICENSE)
 
 This repository contains a reference implementation of a verifier for the
 encrypted record of an election. After an election is completed, the verifier
