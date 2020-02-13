@@ -25,3 +25,7 @@ path = "src/main.rs"
 [[bin]]
 name = "encrypt"
 path = "src/bin/encrypt_election.rs"
+
+
+[features]
+test-big-primes = []

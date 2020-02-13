@@ -530,7 +530,7 @@ impl From<u32> for Coefficient {
 
 // # The groups defined in [IETF RFC 3526](https://tools.ietf.org/html/rfc3526)
 
-#[cfg(not(test))]
+#[cfg(any(not(test), feature = "test-big-primes"))]
 lazy_static! {
     /// The selected "safe" `PRIME_MODULUS` for all group operations
     pub static ref PRIME_MODULUS: BigUint =
@@ -542,7 +542,7 @@ lazy_static! {
         parse_biguint_hex_or_panic(GENERATOR_HEX);
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "test-big-primes")))]
 lazy_static! {
     pub static ref PRIME_MODULUS: BigUint = BigUint::from(200087_u32);
     pub static ref PRIME_SUBGROUP_MODULUS: BigUint =
