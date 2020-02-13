@@ -58,7 +58,7 @@ impl Exponent {
     /// Inject an integer into the exponential group: this wraps modulo the
     /// prime modulus if the number is greater than or equal to the modulus.
     pub fn new(exponent: BigUint) -> Exponent {
-        Exponent::unchecked(exponent % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked(exponent % &*PRIME_SUBGROUP_MODULUS)
     }
 
     /// Construct an exponent of a group without checking whether the given
@@ -76,7 +76,7 @@ impl Coefficient {
     /// Inject an integer into the exponential group: this wraps modulo the
     /// prime modulus if the number is greater than or equal to the modulus.
     pub fn new(coefficient: BigUint) -> Coefficient {
-        Coefficient::unchecked(coefficient % &*PRIME_MODULUS)
+        Coefficient::unchecked(coefficient % &*PRIME_SUBGROUP_MODULUS)
     }
 
     /// Construct an exponent of a group without checking whether the given
@@ -120,6 +120,9 @@ pub fn prime() -> &'static BigUint {
 
 pub fn prime_minus_one() -> &'static BigUint {
     &*PRIME_MODULUS_MINUS_ONE
+}
+pub fn subgroup_prime() -> &'static BigUint {
+    &*PRIME_SUBGROUP_MODULUS
 }
 
 // Multiplicative group operations
@@ -227,7 +230,7 @@ impl Add for Exponent {
     fn add(self, other: Exponent) -> Exponent {
         let a = self.exponent;
         let b = other.exponent;
-        Exponent::unchecked((a + b) % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked((a + b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -237,7 +240,7 @@ impl Add for &Exponent {
     fn add(self, other: &Exponent) -> Exponent {
         let a = &self.exponent;
         let b = &other.exponent;
-        Exponent::unchecked((a + b) % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked((a + b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -247,7 +250,7 @@ impl Sub for Exponent {
     fn sub(self, other: Exponent) -> Exponent {
         let a = self.exponent;
         let b = other.exponent;
-        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b) % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked((a + &*PRIME_SUBGROUP_MODULUS - b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -257,7 +260,7 @@ impl Sub for &Exponent {
     fn sub(self, other: &Exponent) -> Exponent {
         let a = &self.exponent;
         let b = &other.exponent;
-        Exponent::unchecked((a + &*PRIME_MODULUS_MINUS_ONE - b) % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked((a + &*PRIME_SUBGROUP_MODULUS - b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -267,7 +270,7 @@ impl Mul for Exponent {
     fn mul(self, other: Exponent) -> Exponent {
         let a = self.exponent;
         let b = other.exponent;
-        Exponent::unchecked(a * b % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked(a * b % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -277,7 +280,7 @@ impl Mul for &Exponent {
     fn mul(self, other: &Exponent) -> Exponent {
         let a = &self.exponent;
         let b = &other.exponent;
-        Exponent::unchecked(a * b % &*PRIME_MODULUS_MINUS_ONE)
+        Exponent::unchecked(a * b % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -288,7 +291,7 @@ impl Neg for Exponent {
         if self.exponent.is_zero() {
             self
         } else {
-            Exponent::unchecked(&*PRIME_MODULUS_MINUS_ONE - self.exponent)
+            Exponent::unchecked(&*PRIME_SUBGROUP_MODULUS - self.exponent)
         }
     }
 }
@@ -300,7 +303,7 @@ impl Neg for &Exponent {
         if self.exponent.is_zero() {
             self.clone()
         } else {
-            Exponent::unchecked(&*PRIME_MODULUS_MINUS_ONE - &self.exponent)
+            Exponent::unchecked(&*PRIME_SUBGROUP_MODULUS - &self.exponent)
         }
     }
 }
@@ -309,7 +312,7 @@ impl Pow<&BigUint> for &Exponent {
     type Output = Exponent;
     /// Raise a group element to an arbitrary exponent.
     fn pow(self, other: &BigUint) -> Exponent {
-        Exponent::unchecked(self.exponent.modpow(other, &*PRIME_MODULUS_MINUS_ONE))
+        Exponent::unchecked(self.exponent.modpow(other, &*PRIME_SUBGROUP_MODULUS))
     }
 }
 
@@ -340,7 +343,7 @@ impl Coefficient {
         // inverse is given by a^-1 = a^(m-2) (mod m)."
         Coefficient::unchecked(
             self.coefficient
-                .modpow(&(&*PRIME_MODULUS - 2_u8), &*PRIME_MODULUS),
+                .modpow(&(&*PRIME_SUBGROUP_MODULUS - 2_u8), &*PRIME_SUBGROUP_MODULUS),
         )
     }
 }
@@ -351,7 +354,7 @@ impl Add for Coefficient {
     fn add(self, other: Coefficient) -> Coefficient {
         let a = self.coefficient;
         let b = other.coefficient;
-        Coefficient::unchecked((a + b) % &*PRIME_MODULUS)
+        Coefficient::unchecked((a + b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -361,7 +364,7 @@ impl Add for &Coefficient {
     fn add(self, other: &Coefficient) -> Coefficient {
         let a = &self.coefficient;
         let b = &other.coefficient;
-        Coefficient::unchecked((a + b) % &*PRIME_MODULUS)
+        Coefficient::unchecked((a + b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -371,7 +374,7 @@ impl Sub for Coefficient {
     fn sub(self, other: Coefficient) -> Coefficient {
         let a = self.coefficient;
         let b = other.coefficient;
-        Coefficient::unchecked((a + &*PRIME_MODULUS - b) % &*PRIME_MODULUS)
+        Coefficient::unchecked((a + &*PRIME_SUBGROUP_MODULUS - b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -381,7 +384,7 @@ impl Sub for &Coefficient {
     fn sub(self, other: &Coefficient) -> Coefficient {
         let a = &self.coefficient;
         let b = &other.coefficient;
-        Coefficient::unchecked((a + &*PRIME_MODULUS - b) % &*PRIME_MODULUS)
+        Coefficient::unchecked((a + &*PRIME_SUBGROUP_MODULUS - b) % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -392,7 +395,7 @@ impl Neg for Coefficient {
         if self.coefficient.is_zero() {
             self
         } else {
-            Coefficient::unchecked(&*PRIME_MODULUS - self.coefficient)
+            Coefficient::unchecked(&*PRIME_SUBGROUP_MODULUS - self.coefficient)
         }
     }
 }
@@ -404,7 +407,7 @@ impl Neg for &Coefficient {
         if self.coefficient.is_zero() {
             self.clone()
         } else {
-            Coefficient::unchecked(&*PRIME_MODULUS - &self.coefficient)
+            Coefficient::unchecked(&*PRIME_SUBGROUP_MODULUS - &self.coefficient)
         }
     }
 }
@@ -412,14 +415,14 @@ impl Neg for &Coefficient {
 impl Mul for Coefficient {
     type Output = Coefficient;
     fn mul(self, other: Coefficient) -> Coefficient {
-        Coefficient::unchecked(self.coefficient * other.coefficient % &*PRIME_MODULUS)
+        Coefficient::unchecked(self.coefficient * other.coefficient % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
 impl Mul for &Coefficient {
     type Output = Coefficient;
     fn mul(self, other: &Coefficient) -> Coefficient {
-        Coefficient::unchecked(&self.coefficient * &other.coefficient % &*PRIME_MODULUS)
+        Coefficient::unchecked(&self.coefficient * &other.coefficient % &*PRIME_SUBGROUP_MODULUS)
     }
 }
 
@@ -440,14 +443,17 @@ impl Div for &Coefficient {
 impl Pow<&Exponent> for &Coefficient {
     type Output = Coefficient;
     fn pow(self, other: &Exponent) -> Coefficient {
-        Coefficient::unchecked(self.coefficient.modpow(&other.exponent, &*PRIME_MODULUS))
+        Coefficient::unchecked(
+            self.coefficient
+                .modpow(&other.exponent, &*PRIME_SUBGROUP_MODULUS),
+        )
     }
 }
 
 impl Pow<&BigUint> for &Coefficient {
     type Output = Coefficient;
     fn pow(self, other: &BigUint) -> Coefficient {
-        Coefficient::unchecked(self.coefficient.modpow(other, &*PRIME_MODULUS))
+        Coefficient::unchecked(self.coefficient.modpow(other, &*PRIME_SUBGROUP_MODULUS))
     }
 }
 
@@ -480,7 +486,7 @@ impl From<BigUint> for Exponent {
     /// This succeeds if and only if the given value is strictly less than the
     /// prime modulus of the group *minus one*.
     fn from(number: BigUint) -> Self {
-        if number < *PRIME_MODULUS_MINUS_ONE {
+        if number < *PRIME_SUBGROUP_MODULUS {
             Exponent { exponent: number }
         } else {
             panic!("argument out of range for conversion to group exponent")
@@ -490,7 +496,7 @@ impl From<BigUint> for Exponent {
 
 impl From<BigUint> for Coefficient {
     fn from(number: BigUint) -> Self {
-        if number < *PRIME_MODULUS {
+        if number < *PRIME_SUBGROUP_MODULUS {
             Coefficient {
                 coefficient: number,
             }
@@ -530,14 +536,13 @@ lazy_static! {
     pub static ref PRIME_MODULUS: BigUint =
         PRIME_1536.clone();
 
-    /// The number 2 as a `BigUint` constant (all groups use generator = 2)
-    pub static ref GENERATOR: BigUint = BigUint::from(2_u32);
+    pub static ref GENERATOR: BigUint = BigUint::from(4_u32);
 }
 
 #[cfg(test)]
 lazy_static! {
-    pub static ref PRIME_MODULUS: BigUint = BigUint::from(100103_u32);
-    pub static ref GENERATOR: BigUint = BigUint::from(5_u32);
+    pub static ref PRIME_MODULUS: BigUint = BigUint::from(200087_u32);
+    pub static ref GENERATOR: BigUint = BigUint::from(25_u32);
 }
 
 lazy_static! {
@@ -563,6 +568,9 @@ lazy_static! {
     /// group of exponents)
     pub static ref PRIME_MODULUS_MINUS_ONE: BigUint =
         &*PRIME_MODULUS - BigUint::one();
+
+    pub static ref PRIME_SUBGROUP_MODULUS: BigUint =
+        (&*PRIME_MODULUS - BigUint::one()) / BigUint::from(2_u8);
 }
 
 #[cfg(test)]
