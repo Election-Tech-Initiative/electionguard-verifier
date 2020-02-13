@@ -84,10 +84,6 @@ fn test_normal() {
 }
 
 #[test]
-// Reconstruction of shares for missing trustees is not fully implemented yet, and may require
-// protocol changes.  For now, this test should fail with errors saying "invalid Chaum-Pedersen
-// proof of correct fragment computation".
-#[should_panic]
 fn test_missing() {
     let dummy_information = BallotInfo {
         date: "today".to_owned(),
