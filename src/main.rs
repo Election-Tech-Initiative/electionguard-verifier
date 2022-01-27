@@ -6,11 +6,11 @@ use structopt::StructOpt;
 use electionguard_verify::check;
 use electionguard_verify::schema;
 
+#[derive(StructOpt)]
 #[structopt(
     name = "electionguard_verify",
     about = "Verify the results of an election."
 )]
-#[derive(StructOpt)]
 struct Options {
     /// The path to the JSON file containing the election results.
     /// We read from STDIN if not present.
