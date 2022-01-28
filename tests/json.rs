@@ -9,7 +9,7 @@ use electionguard_verify::schema;
 
 #[test]
 fn test_parsing() -> Result<(), Box<dyn Error>> {
-    for file in fs::read_dir("tests/")? {
+    for file in fs::read_dir("tests/records/")? {
         let file = file?;
         if let Some(ext) = file.path().extension() {
             if ext == "json" {
