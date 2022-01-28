@@ -2,7 +2,7 @@
 
 #  🗳️ ElectionGuard Verifier
 
-[![CI](https://github.com/microsoft/electionguard-verifier/actions/workflows/rustbuild.yml/badge.svg)](https://github.com/microsoft/electionguard-verifier/actions/workflows/rustbuild.yml)
+[![CI](https://github.com/microsoft/electionguard-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/microsoft/electionguard-verifier/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/microsoft/electionguard-verifier)](LICENSE)
 
 This repository contains a reference implementation of a verifier for the
